@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── RESUME MAKER ENUMS ──────────────────────────────────────────────
+
+enum AvailabilityStatus {
+  available
+  not_available
+  spot_available
+}
+
+// ─── IDENTITY MODULES ───────────────────────────────────────────────
+
+model User {
+  id                 String              @id @default(uuid())
+  mobileNumber       String?             @unique
+  email              String?             @unique
+  password           String?
+  globalRoles        Int                 @default(1)
+  isVerified         Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  otps               Otp[]
+  jobSeekerProfile   JobSeekerProfile?
+  notificationTokens NotificationToken[]
+
+  @@index([mobileNumber])
+  @@index([email])
+}
+
+model NotificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Otp {
+  id           String   @id @default(uuid())
+  mobileNumber String
+  otpHash      String
+  expiresAt    DateTime
+  purpose      String
+  createdAt    DateTime @default(now())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([mobileNumber])
+  @@index([expiresAt])
+}
+
+// ─── CANDIDATE PROFILE & RESUME MODULES ──────────────────────────────
+
+model JobSeekerProfile {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName           String
+  email              String             @unique
+  profilePhotoUrl    String?
+  location           String?
+  phone              String?
+  linkedin           String?
+  github             String?
+  portfolio          String?
+  bio                String?
+  availabilityStatus AvailabilityStatus @default(available)
+  jobPreferences     Json?
+  smtpHost           String?
+  smtpPort           Int?
+  smtpUser           String?
+  smtpPass           String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  resumes               Resume[]
+  skills                Skill[]
+  education             Education[]
+  experience            Experience[]
+  projects              Project[]
+  certifications        Certification[]
+  languages             Language[]
+  achievements          Achievement[]
+  jobDescriptions       JobDescription[]
+
+  @@index([email])
+  @@index([userId])
+}
+
+model Resume {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  name               String
+  source             String
+  filePath           String?
+  isPrimary          Boolean          @default(false)
+  atsScore           Int?
+  content            Json?
+  aiSuggestions      Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  versions           ResumeVersion[]
+
+  @@index([jobSeekerProfileId])
+}
+
+model Skill {
+  id                 String           @id @default(uuid())
+  name               String
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  createdAt          DateTime         @default(now())
+
+  @@unique([jobSeekerProfileId, name])
+  @@index([jobSeekerProfileId])
+}
+
+model Education {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  institution        String
+  degree             String
+  field              String
+  location           String?
+  startMonth         String?
+  startYear          String?
+  endMonth           String?
+  endYear            String?
+  cgpa               String?
+  description        String?          @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([jobSeekerProfileId])
+}
+
+model Experience {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  company            String
+  role               String
+  location           String?
+  startMonth         String?
+  startYear          String?
+  endMonth           String?
+  endYear            String?
+  current            Boolean          @default(false)
+  description        String?          @db.Text
+  skillsUsed         String[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([jobSeekerProfileId])
+}
+
+model Project {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  name               String
+  description        String           @db.Text
+  technologies       String[]
+  githubLink         String?
+  liveLink           String?
+  startDate          String?
+  endDate            String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([jobSeekerProfileId])
+}
+
+model Certification {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  name               String
+  organization       String
+  issueDate          String?
+  credentialUrl      String?
+  createdAt          DateTime         @default(now())
+
+  @@index([jobSeekerProfileId])
+}
+
+model Language {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  language           String
+  proficiency        String
+  createdAt          DateTime         @default(now())
+
+  @@index([jobSeekerProfileId])
+}
+
+model Achievement {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?          @db.Text
+  year               String?
+  createdAt          DateTime         @default(now())
+
+  @@index([jobSeekerProfileId])
+}
+
+model JobDescription {
+  id              String           @id @default(uuid())
+  jobSeekerId     String
+  jobSeeker       JobSeekerProfile @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
+  title           String?
+  company         String?
+  descriptionText String           @db.Text
+  createdAt       DateTime         @default(now())
+
+  @@index([jobSeekerId])
+}
+
+model ResumeVersion {
+  id        String       @id @default(uuid())
+  resumeId  String
+  resume    Resume       @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobTitle  String?
+  company   String?
+  atsScore  Int?
+  content   Json? // Stores optimized resume version JSON
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  coverLetter CoverLetter?
+
+  @@index([resumeId])
+}
+
+model CoverLetter {
+  id              String        @id @default(uuid())
+  resumeVersionId String        @unique
+  resumeVersion   ResumeVersion @relation(fields: [resumeVersionId], references: [id], onDelete: Cascade)
+  subject         String?
+  body            String        @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root {
+      --bg-main: #0a0a0c;
+      --bg-card: #121216;
+      --border: #22222a;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .logo-text {
+      font-size: 16px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge {
+      font-size: 10px;
+      background: var(--border);
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: var(--text-muted);
+    }
+
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background-color: #050507;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text-main);
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #4f46e5;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: #ef4444;
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .status-text {
+      font-size: 11px;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .status-success {
+      color: #10b981;
+    }
+
+    .status-error {
+      color: #ef4444;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="logo-text">DearHR</span>
+      <span class="badge">JD Capture</span>
+    </div>
+
+    <!-- Auth screen -->
+    <div id="auth-screen" class="card hidden">
+      <label>Enter Auth Token</label>
+      <input type="password" id="token-input" placeholder="Paste your API JWT token here...">
+      <p style="font-size: 10px; color: var(--text-muted); margin: 0;">Copy your token from the profile settings page in the DearHR web app.</p>
+      <button id="save-token-btn" class="btn-primary">Connect Extension</button>
+    </div>
+
+    <!-- Main action screen -->
+    <div id="main-screen" class="card hidden">
+      <div>
+        <label>Company Name</label>
+        <input type="text" id="company-input" placeholder="e.g. Google">
+      </div>
+
+      <div>
+        <label>Job Title</label>
+        <input type="text" id="title-input" placeholder="e.g. Software Engineer">
+      </div>
+
+      <div>
+        <label>Job Description Text</label>
+        <textarea id="jd-textarea" rows="5" placeholder="Click 'Auto-Extract' or paste here..."></textarea>
+      </div>
+
+      <button id="extract-btn" class="btn-secondary">
+        ✨ Auto-Extract JD
+      </button>
+
+      <button id="send-btn" class="btn-primary">
+        🚀 Send to Tailor Studio
+      </button>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+        <span id="connection-status" style="font-size: 10px; color: #10b981;">● Connected</span>
+        <button id="logout-btn" class="btn-danger">Disconnect</button>
+      </div>
+    </div>
+
+    <div id="status-message" class="status-text hidden"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
