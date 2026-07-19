@@ -1,11 +1,12 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../utils/prisma.ts';
-import { generateCoverLetter as aiGenerateCoverLetter } from '../services/groq.service.ts';
+import { generateCoverLetter as aiGenerateCoverLetter, analyzeJobHtmlWithAI } from '../services/groq.service.ts';
 
 const getProfileId = async (userId: string) => {
   const profile = await prisma.jobSeekerProfile.findUnique({ where: { userId } });
   return profile?.id ?? null;
 };
+
 
 export const saveJobDescription = async (req: Request, res: Response) => {
   try {
@@ -303,3 +304,19 @@ export const updateCoverLetter = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
   }
 };
+
+export const analyzeJobHtml = async (req: Request, res: Response) => {
+  try {
+    const { html, url, domain } = req.body;
+    if (!html) {
+      return res.status(400).json({ success: false, error: 'Page HTML content is required' });
+    }
+
+    const researchData = await analyzeJobHtmlWithAI(html as string, (url as string) || '', (domain as string) || '');
+    return res.status(200).json({ success: true, data: researchData });
+  } catch (err: any) {
+    console.error('analyzeJobHtml controller error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'AI webpage analysis failed' });
+  }
+};
+

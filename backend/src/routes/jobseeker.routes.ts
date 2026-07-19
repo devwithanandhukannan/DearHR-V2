@@ -59,8 +59,10 @@ import {
   deleteResumeVersion,
   duplicateResumeVersion,
   generateCoverLetterForVersion,
-  updateCoverLetter
+  updateCoverLetter,
+  analyzeJobHtml
 } from '../controllers/version.controller.ts';
+
 
 const router = express.Router();
 
@@ -147,9 +149,11 @@ router.post('/resumes/:id/send-email', sendEmailWithCV as any);
 
 // ─── EXTENSION & JOB DESCRIPTIONS ───────────────────────────────────────
 router.post('/job-descriptions', saveJobDescription as any);
+router.post('/job-descriptions/analyze-html', analyzeJobHtml as any);
 router.get('/job-descriptions', getJobDescriptions as any);
 router.get('/job-descriptions/:id', getJobDescription as any);
 router.delete('/job-descriptions/:id', deleteJobDescription as any);
+
 
 // ─── RESUME VERSION MANAGER & COVER LETTERS ──────────────────────────────
 router.get('/resumes/:id/versions', getResumeVersions as any);

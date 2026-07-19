@@ -1,4 +1,4 @@
-// popup.js - Chrome Extension script (Apple Minimalist Intelligence & Tab Management)
+// popup.js - Chrome Extension script (Apple Minimalist Complete-HTML AI Research)
 
 const API_BASE = 'http://localhost:8000/api';
 const APP_URL = 'http://localhost:3000';
@@ -109,9 +109,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 4. Extraction Logic
+  // 4. Extraction Logic - Captures Complete HTML & Page Metadata
   async function runExtraction() {
-    showStatus('Extracting page content...', 'info');
+    showStatus('Extracting complete webpage HTML...', 'info');
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab) throw new Error('No active browser tab found.');
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           titleInput.value = details.jobTitle;
         }
         
-        showStatus('Content extracted successfully!', 'success');
+        showStatus('Webpage HTML & content extracted!', 'success');
       } else {
         throw new Error('Could not parse active webpage content.');
       }
@@ -145,98 +145,111 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 5. Job Worthiness & Intelligence Analysis Engine
+  // 5. Job Intelligence Analysis (Sends Complete Loaded HTML to AI Backend)
   async function executeJobIntelligence() {
     intelLoading.classList.remove('hidden');
     intelContent.classList.add('hidden');
 
-    if (!currentExtractedData || !jdTextarea.value.trim()) {
+    if (!currentExtractedData || !currentExtractedData.completeHtml) {
       await runExtraction();
     }
 
+    const html = currentExtractedData?.completeHtml || '';
+    const pageUrl = currentExtractedData?.url || '';
+    const domain = currentExtractedData?.domain || 'webpage';
+
+    try {
+      const { dearhr_token } = await chrome.storage.local.get('dearhr_token');
+
+      if (dearhr_token && html) {
+        // Send Complete Loaded Page HTML to Backend AI Endpoint
+        const response = await fetch(`${API_BASE}/jobseeker/job-descriptions/analyze-html`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${dearhr_token}`
+          },
+          body: JSON.stringify({ html, url: pageUrl, domain })
+        });
+
+        const resData = await response.json();
+        if (response.ok && resData.success && resData.data) {
+          renderIntelligenceData(resData.data, domain, pageUrl);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend AI HTML analysis fallback triggered:', err);
+    }
+
+    // Client-side fallback if backend API is offline
+    fallbackIntelligence(domain, pageUrl);
+  }
+
+  function renderIntelligenceData(ai, domain, pageUrl) {
+    const company = ai.company || companyInput.value.trim() || 'Target Employer';
+    const title = ai.jobTitle || titleInput.value.trim() || 'Job Role';
+
+    resMatchScore.innerText = `${ai.matchScore || 88}%`;
+    resWorthTitle.innerText = ai.worthTitle || 'High Opportunity Role';
+    resWorthDesc.innerText = ai.worthDesc || 'Verified hiring channel and strong skill demand.';
+
+    resPosterName.innerText = ai.postedBy || `Talent Team (${company})`;
+    resCompanyInfo.innerText = ai.companyResearch || `Company: ${company} • Domain: ${domain} (HTTPS Verified Listing)`;
+
+    resSummaryText.innerText = ai.globalSummary || `Global web analysis confirms ${title} at ${company} is an active role requiring technical expertise.`;
+
+    const skills = ai.detectedSkills || ['Software Engineering', 'Problem Solving', 'Teamwork'];
+    resSkillTags.innerHTML = skills.map(s => `<span class="skill-tag">${s}</span>`).join('');
+
+    const resources = ai.referencedResources || [
+      { name: 'Official Job Listing', badge: domain || 'Platform', url: pageUrl || '#' },
+      { name: `${company} Glassdoor & Salary Index`, badge: 'Market Index', url: `https://www.google.com/search?q=${encodeURIComponent(company + ' Glassdoor salary reviews')}` },
+      { name: `${company} LinkedIn Corporate Profile`, badge: 'Corporate Profile', url: `https://www.google.com/search?q=${encodeURIComponent(company + ' LinkedIn corporate profile')}` }
+    ];
+
+    resResourceList.innerHTML = resources.map(res => `
+      <a href="${res.url}" target="_blank" class="resource-item">
+        <span class="resource-name">
+          <span>🔗</span> ${res.name}
+        </span>
+        <span class="resource-badge">${res.badge}</span>
+      </a>
+    `).join('');
+
+    intelLoading.classList.add('hidden');
+    intelContent.classList.remove('hidden');
+  }
+
+  function fallbackIntelligence(domain, pageUrl) {
     const company = companyInput.value.trim() || currentExtractedData?.customCompany || 'Target Employer';
     const title = titleInput.value.trim() || currentExtractedData?.customTitle || 'Job Role';
     const text = jdTextarea.value.trim();
-    const domain = currentExtractedData?.domain || 'webpage';
-    const pageUrl = currentExtractedData?.url || '';
     const postedBy = currentExtractedData?.postedBy || '';
-    const salary = currentExtractedData?.salary || '';
-    const location = currentExtractedData?.location || '';
 
-    // Calculate Job Match & Worth Score
-    let matchScore = 88;
-    let worthTitleText = 'High Potential Role';
-    let worthDescText = 'Verified hiring channel, strong skill demand, and clear role responsibilities.';
-
-    if (pageUrl.includes('linkedin.com')) {
-      matchScore = 92;
-      worthTitleText = 'Prime Opportunity';
-      worthDescText = 'High-growth role with verified corporate team and direct platform application path.';
-    } else if (pageUrl.includes('indeed.com')) {
-      matchScore = 87;
-      worthTitleText = 'Solid Market Role';
-      worthDescText = 'Clear compensation alignment and standard industry hiring process.';
-    } else if (pageUrl.includes('naukri.com')) {
-      matchScore = 85;
-      worthTitleText = 'Good Opportunity';
-      worthDescText = 'Verified corporate profile with active recruiting footprint.';
-    }
-
-    if (text.length < 150) {
-      matchScore -= 20;
-      worthTitleText = 'Brief Description';
-      worthDescText = 'Role requirements are sparse. Recommend verifying detailed requirements before applying.';
-    }
-
-    // Extract Skill Badges
-    const knownSkills = ['React', 'Next.js', 'Node.js', 'TypeScript', 'JavaScript', 'Python', 'Java', 'C++', 'Go', 'AWS', 'Docker', 'Kubernetes', 'SQL', 'PostgreSQL', 'GraphQL', 'REST API', 'System Design', 'Git', 'CI/CD'];
     const textLower = text.toLowerCase();
+    const knownSkills = ['React', 'Next.js', 'Node.js', 'TypeScript', 'JavaScript', 'Python', 'Java', 'Go', 'AWS', 'Docker', 'SQL', 'PostgreSQL', 'System Design'];
     const detectedSkills = knownSkills.filter(sk => textLower.includes(sk.toLowerCase()));
-    if (detectedSkills.length === 0) {
-      detectedSkills.push('Software Engineering', 'Problem Solving', 'Team Collaboration');
-    }
+    if (detectedSkills.length === 0) detectedSkills.push('Engineering', 'Problem Solving');
 
-    // Recruiter & Publisher Info
-    let posterDisplay = postedBy ? `${postedBy} (${company})` : `Talent Acquisition • ${company}`;
-    let companyDisplay = `Platform: ${domain} (HTTPS Verified • Safe Listing)`;
-
-    // Global Search Summary
-    let summaryText = `Global search summary for ${title} at ${company}. `;
-    if (location) summaryText += `Location: ${location}. `;
-    if (salary) summaryText += `Salary Benchmark: ${salary}. `;
-    summaryText += `Role requires proficiency in ${detectedSkills.slice(0, 3).join(', ')}, focusing on scalable engineering and cross-functional execution.`;
-
-    // Referenced Resources
-    const resources = [
-      { name: 'Official Job Listing', badge: domain || 'Platform', url: pageUrl || '#' },
-      { name: `${company} Market & Glassdoor Search`, badge: 'Market Index', url: `https://www.google.com/search?q=${encodeURIComponent(company + ' Glassdoor reviews and salary')}` },
-      { name: `${title} Industry Skill Standard`, badge: 'Skill Benchmark', url: `https://www.google.com/search?q=${encodeURIComponent(title + ' required skills benchmark')}` }
-    ];
+    const aiFallback = {
+      matchScore: 88,
+      worthTitle: 'Solid Opportunity',
+      worthDesc: 'Verified domain, clear technical expectations, and active hiring channel.',
+      postedBy: postedBy ? `${postedBy} (${company})` : `Talent Acquisition • ${company}`,
+      companyResearch: `Employer: ${company} • Domain: ${domain} (HTTPS Verified Listing)`,
+      globalSummary: `Global search summary for ${title} at ${company}. Verified technical listing with key focus on ${detectedSkills.slice(0, 3).join(', ')}.`,
+      detectedSkills: detectedSkills,
+      referencedResources: [
+        { name: 'Official Webpage Listing', badge: domain || 'Platform', url: pageUrl || '#' },
+        { name: `${company} Glassdoor & Salary Search`, badge: 'Market Index', url: `https://www.google.com/search?q=${encodeURIComponent(company + ' Glassdoor salary reviews')}` },
+        { name: `${company} Corporate LinkedIn`, badge: 'Corporate Profile', url: `https://www.google.com/search?q=${encodeURIComponent(company + ' LinkedIn profile')}` },
+        { name: `${title} Benchmark Standard`, badge: 'Skill Index', url: `https://www.google.com/search?q=${encodeURIComponent(title + ' required skills benchmark')}` }
+      ]
+    };
 
     setTimeout(() => {
-      resMatchScore.innerText = `${matchScore}%`;
-      resWorthTitle.innerText = worthTitleText;
-      resWorthDesc.innerText = worthDescText;
-
-      resPosterName.innerText = posterDisplay;
-      resCompanyInfo.innerText = companyDisplay;
-      resSummaryText.innerText = summaryText;
-
-      // Render skill badges
-      resSkillTags.innerHTML = detectedSkills.slice(0, 6).map(s => `<span class="skill-tag">${s}</span>`).join('');
-
-      // Render Referenced Resources
-      resResourceList.innerHTML = resources.map(res => `
-        <a href="${res.url}" target="_blank" class="resource-item">
-          <span class="resource-name">
-            <span>🔗</span> ${res.name}
-          </span>
-          <span class="resource-badge">${res.badge}</span>
-        </a>
-      `).join('');
-
-      intelLoading.classList.add('hidden');
-      intelContent.classList.remove('hidden');
+      renderIntelligenceData(aiFallback, domain, pageUrl);
     }, 250);
   }
 

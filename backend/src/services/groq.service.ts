@@ -1200,3 +1200,61 @@ Return ONLY valid JSON matching this schema:
     liveScript: string;
   };
 };
+
+export const analyzeJobHtmlWithAI = async (html: string, pageUrl: string, domain: string) => {
+  const cleanHtml = (html || '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\s+/g, ' ')
+    .substring(0, 30000);
+
+  const prompt = `You are an expert HR Intelligence AI and Web Research Engine.
+Analyze the following complete HTML web page source code loaded from "${pageUrl}" (Domain: ${domain}).
+
+Perform a thorough extraction and global company intelligence research based on the entire webpage markup, meta elements, JSON-LD, microdata, and content body.
+
+HTML Source Excerpt:
+"""
+${cleanHtml}
+"""
+
+Rules:
+1. Extract the exact Company Name, Job Title, and Who Posted That Job (Recruiter Name/Title or Hiring Team).
+2. Evaluate if this job is worth pursuing and calculate a Match & Worth Score (0-100). Provide a clear title (e.g. "Prime Opportunity") and brief explanation why.
+3. Provide deep Company Info & Research: industry category, verified domain status, company background summary, and employer reputation.
+4. Synthesize a concise Global Search Summary of the job requirements, market positioning, and key technical skills required.
+5. Generate a list of Referenced Intelligence Resources & Citations with links (e.g., Official Job Page, Glassdoor Salary Search link, LinkedIn Company Search link, Skill Benchmark link).
+
+Return ONLY valid JSON matching this schema:
+{
+  "company": "Company Name",
+  "jobTitle": "Job Title",
+  "postedBy": "Recruiter Name / Hiring Team info",
+  "companyResearch": "Detailed background about the company, HQ, scale, and verified status",
+  "matchScore": 90,
+  "worthTitle": "Prime Opportunity",
+  "worthDesc": "Reasoning on why it is worth pursuing",
+  "globalSummary": "Synthesized executive summary from global search & web index for this role",
+  "detectedSkills": ["Skill1", "Skill2", "Skill3", "Skill4"],
+  "referencedResources": [
+    { "name": "Official Job Listing", "badge": "Platform", "url": "${pageUrl}" },
+    { "name": "Company Glassdoor & Salary Search", "badge": "Market Index", "url": "https://www.google.com/search?q=${encodeURIComponent(domain + ' Glassdoor salary reviews')}" },
+    { "name": "LinkedIn Corporate Profile", "badge": "Corporate Profile", "url": "https://www.google.com/search?q=${encodeURIComponent(domain + ' LinkedIn corporate profile')}" }
+  ]
+}`;
+
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: MODEL,
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    });
+
+    return JSON.parse(completion.choices[0]?.message?.content ?? '{}');
+  } catch (err: any) {
+    console.error('analyzeJobHtmlWithAI error:', err);
+    throw err;
+  }
+};
