@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import api from '@/app/lib/axios';
 import {
   FileText, Upload, Sparkles, X, AlertCircle, CheckCircle2,
   Target, Lightbulb, KeyRound, BarChart3, ArrowUpRight, Loader2,
@@ -323,13 +324,16 @@ function RoastModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (r
 }
 
 // ─── Generate Modal ───────────────────────────────────────────────────────
-function GenerateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (r: ResumeListItem) => void }) {
+function GenerateModal({ onClose, onSuccess, profileScore }: { onClose: () => void; onSuccess: (r: ResumeListItem) => void; profileScore: number | null }) {
   const [jd, setJd] = useState('');
   const [showJD, setShowJD] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isProfileIncomplete = profileScore !== null && profileScore < 70;
+
   const handleGenerate = async () => {
+    if (isProfileIncomplete) return;
     setLoading(true); setError('');
     try {
       const res = await generateCV(undefined, jd.trim() || undefined);
@@ -350,18 +354,40 @@ function GenerateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
           <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5"><X size={18} /></button>
         </div>
 
-        <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl px-4 py-3 mb-5 flex items-start gap-2.5">
-          <Info size={14} className="text-blue-400 mt-0.5 flex-shrink-0" />
-          <p className="text-blue-300 text-xs">Your profile data (skills, experience, projects) will be used to build the resume. Keep your profile updated for best results.</p>
-        </div>
+        {isProfileIncomplete ? (
+          <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3.5 mb-5 flex flex-col gap-2.5">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle size={15} className="text-amber-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-amber-300 text-xs font-semibold">Profile Incomplete ({profileScore}%)</p>
+                <p className="text-zinc-400 text-[11px] mt-1 leading-relaxed">
+                  AI CV generation requires at least 70% profile completion. Please complete your work experiences, skills, or projects first to ensure high-quality resume outputs.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/profile"
+              className="w-full text-center py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-850 text-white rounded-lg text-xs font-semibold transition-colors mt-1"
+            >
+              Complete Profile
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl px-4 py-3 mb-5 flex items-start gap-2.5">
+            <Info size={14} className="text-blue-400 mt-0.5 flex-shrink-0" />
+            <p className="text-blue-300 text-xs">Your profile data (skills, experience, projects) will be used to build the resume. Keep your profile updated for best results.</p>
+          </div>
+        )}
 
-        <button onClick={() => setShowJD(v => !v)}
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-white mb-3 transition-colors">
-          <Zap size={12} className="text-blue-400" />Optimise for a job description
-          <ChevronDown size={12} className={`transition-transform ${showJD ? 'rotate-180' : ''}`} />
-        </button>
+        {!isProfileIncomplete && (
+          <button onClick={() => setShowJD(v => !v)}
+            className="flex items-center gap-2 text-xs text-gray-400 hover:text-white mb-3 transition-colors">
+            <Zap size={12} className="text-blue-400" />Optimise for a job description
+            <ChevronDown size={12} className={`transition-transform ${showJD ? 'rotate-180' : ''}`} />
+          </button>
+        )}
 
-        {showJD && (
+        {showJD && !isProfileIncomplete && (
           <textarea value={jd} onChange={e => setJd(e.target.value)} rows={4}
             placeholder="Paste the job description here…"
             className="w-full bg-[#0d0d0d] border border-[#2c2c2e] rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-white/40 resize-none mb-3" />
@@ -374,8 +400,8 @@ function GenerateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
           </div>
         )}
 
-        <button onClick={handleGenerate} disabled={loading}
-          className="w-full bg-white text-black font-semibold py-3 rounded-xl text-sm hover:bg-gray-100 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+        <button onClick={handleGenerate} disabled={loading || isProfileIncomplete}
+          className="w-full bg-white text-black font-semibold py-3 rounded-xl text-sm hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
           {loading ? <><Loader2 size={15} className="animate-spin" />Generating…</> : <><Sparkles size={15} />Generate Resume</>}
         </button>
       </div>
@@ -714,6 +740,7 @@ export default function ResumesPage() {
   const [selected, setSelected] = useState<ResumeListItem | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
   const [loading, setLoading] = useState(true);
+  const [profileScore, setProfileScore] = useState<number | null>(null);
 
   // ─── Extension JD Capture State & Effects ──────────────────────────────
   const [activeJdId, setActiveJdId] = useState<string | null>(null);
@@ -833,8 +860,14 @@ export default function ResumesPage() {
 
   const fetchResumes = useCallback(async () => {
     try {
-      const res = await getAllResumes();
-      setResumes(res.data.data);
+      const [resumesRes, dashRes] = await Promise.all([
+        getAllResumes(),
+        api.get('/jobseeker/dashboard')
+      ]);
+      setResumes(resumesRes.data.data);
+      if (dashRes.data?.success) {
+        setProfileScore(dashRes.data.data.profile?.completionScore ?? 0);
+      }
     } catch {} finally { setLoading(false); }
   }, []);
 
@@ -982,7 +1015,7 @@ export default function ResumesPage() {
       </main>
 
       {modal === 'upload' && <UploadModal onClose={() => setModal(null)} onSuccess={handleSuccess} />}
-      {modal === 'generate' && <GenerateModal onClose={() => setModal(null)} onSuccess={handleSuccess} />}
+      {modal === 'generate' && <GenerateModal onClose={() => setModal(null)} onSuccess={handleSuccess} profileScore={profileScore} />}
       {modal === 'roast' && <RoastModal onClose={() => setModal(null)} onSuccess={handleSuccess} />}
 
       {showJdModal && jdData && (
