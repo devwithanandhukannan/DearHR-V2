@@ -34,23 +34,167 @@ function StatCard({ label, value, sub, subColor = 'text-zinc-500', icon: Icon }:
   );
 }
 
+// ─── Activity Calendar Component ──────────────────────────────────
+function ActivityCalendar({ applications }: { applications: any[] }) {
+  // 1. Calculate date bounds: 365 days ago (aligned to Sunday) up to today
+  const today = new Date();
+  const startDate = new Date();
+  startDate.setDate(today.getDate() - 365);
+  const startDay = startDate.getDay();
+  if (startDay > 0) {
+    startDate.setDate(startDate.getDate() - startDay);
+  }
+
+  // 2. Aggregate count of applications per date string YYYY-MM-DD (local safe)
+  const counts: Record<string, number> = {};
+  applications.forEach(app => {
+    if (!app.createdAt) return;
+    const date = new Date(app.createdAt);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+    counts[dateStr] = (counts[dateStr] || 0) + 1;
+  });
+
+  // 3. Build grid: 53 columns * 7 days
+  const weeks: { date: Date; dateStr: string; count: number }[][] = [];
+  const currentDate = new Date(startDate);
+
+  for (let w = 0; w < 53; w++) {
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      const count = counts[dateStr] || 0;
+
+      week.push({
+        date: new Date(currentDate),
+        dateStr,
+        count
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  // 4. Generate month labels
+  const monthLabels: { label: string; index: number }[] = [];
+  let prevMonth = -1;
+  weeks.forEach((week, index) => {
+    const m = week[0].date.getMonth();
+    if (m !== prevMonth) {
+      monthLabels.push({
+        label: week[0].date.toLocaleString('default', { month: 'short' }),
+        index
+      });
+      prevMonth = m;
+    }
+  });
+
+  const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <div className="bg-[#0b0b0d]/70 border border-zinc-900 rounded-2xl p-5 shadow-xl backdrop-blur-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+            📊 Application Consistency
+          </h3>
+          <p className="text-[11px] text-zinc-500 mt-0.5">
+            Visualization of job search applications tracked over the past year.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 text-[9px] text-zinc-500 self-end font-mono">
+          <span>Less</span>
+          <div className="w-2 h-2 rounded-sm bg-[#0e0e11] border border-zinc-900/40" />
+          <div className="w-2 h-2 rounded-sm bg-[#2e1065] border border-violet-900/30" />
+          <div className="w-2 h-2 rounded-sm bg-[#4c1d95] border border-violet-850/40" />
+          <div className="w-2 h-2 rounded-sm bg-[#6d28d9] border border-violet-700/50" />
+          <div className="w-2 h-2 rounded-sm bg-[#8b5cf6] shadow-[0_0_4px_rgba(139,92,246,0.3)]" />
+          <span>More</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col overflow-x-auto pb-1 custom-scrollbar select-none">
+        {/* Month labels */}
+        <div className="flex gap-[3px] text-[9px] text-zinc-500 mb-1.5 pl-8 relative h-3 w-max">
+          {monthLabels.map((ml, idx) => (
+            <div
+              key={idx}
+              className="absolute font-semibold"
+              style={{ left: `${ml.index * 11}px` }}
+            >
+              {ml.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Days and columns */}
+        <div className="flex gap-[3px] items-start w-max">
+          {/* Day column labels (Mon, Wed, Fri) */}
+          <div className="flex flex-col gap-[3px] pr-1.5 text-[8px] text-zinc-500 font-mono mt-0.5 select-none w-6 shrink-0">
+            {DAY_LABELS.map((label, idx) => (
+              <span key={idx} className="h-2 flex items-center leading-none">
+                {idx % 2 === 1 ? label : ''}
+              </span>
+            ))}
+          </div>
+
+          {/* Grid columns */}
+          {weeks.map((week, wIdx) => (
+            <div key={wIdx} className="flex flex-col gap-[3px]">
+              {week.map((day, dIdx) => {
+                const count = day.count;
+                const dateStr = day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                
+                // Set color class based on count
+                let cellClass = 'bg-[#0e0e11] border border-zinc-900/40 hover:border-zinc-800';
+                if (count === 1) cellClass = 'bg-[#2e1065] border border-violet-900/30';
+                else if (count === 2) cellClass = 'bg-[#4c1d95] border border-violet-850/40';
+                else if (count === 3) cellClass = 'bg-[#6d28d9] border border-violet-700/50';
+                else if (count >= 4) cellClass = 'bg-[#8b5cf6] shadow-[0_0_4px_rgba(139,92,246,0.3)]';
+
+                return (
+                  <div
+                    key={dIdx}
+                    className={`w-2 h-2 rounded-sm transition-all duration-200 cursor-pointer ${cellClass}`}
+                    title={`${count} application${count !== 1 ? 's' : ''} on ${dateStr}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading]         = useState(true);
   const [resumes, setResumes]             = useState<any[]>([]);
+  const [applications, setApplications]   = useState<any[]>([]);
 
   const fetchDashboardData = async () => {
     try {
-      const [dashRes, resumesRes] = await Promise.all([
+      const [dashRes, resumesRes, appsRes] = await Promise.all([
         api.get('/jobseeker/dashboard'),
         api.get('/jobseeker/resumes'),
+        api.get('/jobseeker/applications'),
       ]);
       if (dashRes.data?.success) setDashboardData(dashRes.data.data);
       if (resumesRes.data?.success) {
         setResumes(resumesRes.data.data || []);
       } else if (resumesRes.data) {
         setResumes(resumesRes.data || []);
+      }
+      if (appsRes.data?.success) {
+        setApplications(appsRes.data.data || []);
       }
     } catch (e) {
       console.error(e);
@@ -166,6 +310,9 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Application activity calendar widget */}
+      <ActivityCalendar applications={applications} />
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

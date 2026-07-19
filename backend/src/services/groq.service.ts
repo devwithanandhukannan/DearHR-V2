@@ -167,7 +167,7 @@ Return ONLY valid JSON with this exact schema structure:
   "scores": { "ats":0,"formatting":0,"keywords":0,"grammar":0,"readability":0,"impact":0 },
   "atsBreakdown": { "contactInfo":0,"summary":0,"skills":0,"experience":0,"education":0,"formatting":0 },
   "strengths": [""],
-  "improvements": {},
+  "improvements": { "summary": "Tip here", "experience": "Tip here" },
   "missingSections": [""],
   "keywordGaps": [""],
   "brutalRoast": ""
@@ -586,7 +586,7 @@ Return ONLY valid JSON:
     "formatting": 0
   },
   "strengths": [""],
-  "improvements": {},
+  "improvements": { "summary": "Tip here", "experience": "Tip here" },
   "missingSections": [""],
   "keywordGaps": [""]
 }

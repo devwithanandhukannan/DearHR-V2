@@ -82,7 +82,7 @@ function ResumeCard({ resume, selected, onClick, onDelete }: {
 
   return (
     <div onClick={onClick}
-      className={`group relative rounded-xl p-3.5 cursor-pointer border transition-all duration-200 ${
+      className={`group relative rounded-xl p-3.5 cursor-pointer border transition-all duration-200 overflow-hidden ${
         selected
           ? 'border-white/30 bg-white/5 shadow-lg shadow-black/40 ring-1 ring-white/10'
           : 'border-zinc-800/80 hover:border-zinc-700 bg-zinc-950 hover:bg-zinc-900/50'
@@ -121,7 +121,7 @@ function ResumeCard({ resume, selected, onClick, onDelete }: {
         </div>
       )}
       {selected && (
-        <div className="absolute inset-y-0 left-0 w-0.5 bg-white rounded-r-full" />
+        <div className="absolute top-2.5 bottom-2.5 left-0 w-0.75 bg-white rounded-r-full" />
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 import { FcmProvider } from '../contexts/FcmContext';
@@ -9,6 +10,9 @@ import { SidebarProvider, useSidebar } from '../contexts/SidebarContext';
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { isCollapsed } = useSidebar();
+  const pathname = usePathname();
+
+  const isFullWidthPage = pathname.includes('/resumes/editor/') || pathname.includes('/resumes/tailor-version/');
 
   return (
     <div className="min-h-screen bg-black text-zinc-200 font-sans antialiased flex">
@@ -16,15 +20,19 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       {/* Main content — margin controlled by sidebar collapsed state */}
       <main
         className={`
-          flex-1 min-w-0 overflow-y-auto
+          flex-1 min-w-0
           transition-all duration-300 ease-in-out
-          pt-14 md:pt-0
+          ${isFullWidthPage ? '' : 'overflow-y-auto pt-14 md:pt-0'}
           ${isCollapsed ? 'md:ml-[70px]' : 'md:ml-64'}
         `}
       >
-        <div className="p-5 sm:p-8 max-w-5xl mx-auto w-full min-h-screen">
-          {children}
-        </div>
+        {isFullWidthPage ? (
+          children
+        ) : (
+          <div className="p-5 sm:p-8 max-w-5xl mx-auto w-full min-h-screen">
+            {children}
+          </div>
+        )}
       </main>
     </div>
   );
