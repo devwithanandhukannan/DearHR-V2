@@ -5,6 +5,7 @@ import { generateOTP } from '../utils/generateOtp.ts';
 import { issueSessionCookies } from '../utils/cookie.ts';
 import { ROLES } from '../constants/roles.ts';
 import { PermissionHelper } from '../utils/permissions.ts';
+import fs from 'fs';
 
 export const sendOtp = async (req: Request, res: Response) => {
   try {
@@ -25,6 +26,7 @@ export const sendOtp = async (req: Request, res: Response) => {
     });
 
     console.log(`📱 OTP for ${mobileNumber}: [ ${otp} ]`);
+    fs.writeFileSync('otp_temp.txt', otp);
     return res.status(200).json({ success: true, message: 'OTP sent.' });
   } catch (error) {
     console.error('sendOtp error:', error);

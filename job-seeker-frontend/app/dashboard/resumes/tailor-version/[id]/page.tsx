@@ -296,7 +296,7 @@ export default function TailoredVersionPage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-[#070709] gap-3">
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#070709] gap-3 pt-14 md:pt-0">
         <Loader2 className="animate-spin text-gray-500" size={32} />
         <p className="text-gray-500 text-sm">Loading tailored workspace...</p>
       </div>
@@ -305,7 +305,7 @@ export default function TailoredVersionPage() {
 
   if (!version) {
     return (
-      <div className="h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-[#070709] gap-3 text-center p-4">
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#070709] gap-3 text-center p-4 pt-14 md:pt-0">
         <AlertCircle className="text-red-500" size={40} />
         <p className="text-white text-sm font-semibold">Workspace Not Found</p>
         <Link href="/dashboard/resumes" className="text-gray-500 hover:text-white transition-colors text-xs flex items-center gap-1">
@@ -425,7 +425,7 @@ export default function TailoredVersionPage() {
   const missingKeywords: string[] = contentJSON?.missingKeywords || [];
 
   return (
-    <div className="flex h-[calc(100vh-80px)] -m-4 md:-m-8 overflow-hidden bg-[#070709]">
+    <div className="flex h-screen w-full overflow-hidden bg-[#070709] pt-14 md:pt-0">
       
       {/* ─── LEFT COLUMN: Metadata & Sidebar Workspace navigation ─── */}
       <aside className="w-80 border-r border-[#1a1a24] bg-[#0c0c10] p-6 flex flex-col justify-between shrink-0">
