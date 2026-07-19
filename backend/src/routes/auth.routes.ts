@@ -10,7 +10,10 @@ import {
   adminRegister,
   getAdminDashboard,
   getAdminCandidates,
-  deleteAdminCandidate
+  deleteAdminCandidate,
+  getAdminStats,
+  getPlatformConfig,
+  savePlatformConfig,
 } from '../controllers/auth.controller.ts';
 import { authenticateToken, requirePlatformAdmin } from '../middleware/auth.middleware.ts';
 import { refreshSessionToken } from '../controllers/refreshtoken.controller.ts';
@@ -31,5 +34,10 @@ router.get('/me', authenticateToken, checkMe);
 router.get('/admin/dashboard', authenticateToken, requirePlatformAdmin, getAdminDashboard as any);
 router.get('/admin/candidates', authenticateToken, requirePlatformAdmin, getAdminCandidates as any);
 router.delete('/admin/candidates/:id', authenticateToken, requirePlatformAdmin, deleteAdminCandidate as any);
+
+// Extended admin stats + platform config
+router.get('/admin/stats', authenticateToken, requirePlatformAdmin, getAdminStats as any);
+router.get('/admin/config', authenticateToken, requirePlatformAdmin, getPlatformConfig as any);
+router.post('/admin/config', authenticateToken, requirePlatformAdmin, savePlatformConfig as any);
 
 export default router;

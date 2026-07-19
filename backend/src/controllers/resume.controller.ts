@@ -105,93 +105,135 @@ export const uploadAndAnalyze = async (req: Request, res: Response) => {
   }
 };
 
-const compileResumeHtml = (data: any): string => {
-  const headingStyle = "color: #1a1a1a; font-family: 'Georgia, serif'; margin-bottom: 5px;";
-  const sectionTitleStyle = "color: #1a1a1a; font-family: 'Georgia, serif'; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-top: 20px;";
-  const bodyStyle = "color: #333; font-family: 'Georgia, serif'; font-size: 14px; line-height: 1.5;";
-  const subStyle = "color: #555; font-family: Arial, sans-serif; font-size: 13px;";
-  const linkStyle = "color: #2563EB; text-decoration: none; margin-right: 10px;";
+export const compileResumeHtml = (data: any): string => {
+  const containerStyle = "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1f2937; line-height: 1.5; font-size: 13px; padding: 36px 40px; background: #ffffff; margin: 0 auto; box-sizing: border-box; max-width: 800px;";
+  const nameStyle = "font-size: 22px; font-weight: 800; text-align: center; color: #111827; letter-spacing: -0.02em; margin: 0 0 6px 0; text-transform: uppercase;";
+  const contactStyle = "display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: #4b5563; font-weight: 500; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #f3f4f6;";
+  const sectionTitleStyle = "font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #111827; border-bottom: 1.5px solid #e5e7eb; padding-bottom: 4px; margin-top: 20px; margin-bottom: 10px;";
+  const bodyStyle = "color: #374151; margin-bottom: 10px; font-size: 13px; text-align: justify;";
+  const linkStyle = "color: #2563eb; text-decoration: none; border-bottom: 1px dashed rgba(37,99,235,0.4);";
+  const itemHeaderStyle = "display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; color: #111827; margin-bottom: 2px; font-size: 13px;";
+  const itemSubheaderStyle = "display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: #4b5563; font-style: italic; margin-bottom: 6px;";
+  const listStyle = "margin: 4px 0 10px 0; padding-left: 18px; list-style-type: disc; color: #4b5563; font-size: 12.5px;";
+  const listItemStyle = "margin-bottom: 3px; line-height: 1.45;";
 
-  let html = `<h1 style="${headingStyle}">${data.fullName || ''}</h1>`;
-  
-  // Contact Section
-  html += `<p style="${bodyStyle} text-align: center;">`;
+  let contactHtml = `<div style="${contactStyle}">`;
   const contactParts = [];
-  if (data.contact?.location) contactParts.push(data.contact.location);
-  if (data.contact?.phone) contactParts.push(data.contact.phone);
-  if (data.contact?.email) contactParts.push(data.contact.email);
-  html += contactParts.join(' &nbsp;&middot;&nbsp; ');
-  html += `<br>`;
+  if (data.contact?.location) contactParts.push(`<span>${data.contact.location}</span>`);
+  if (data.contact?.phone) contactParts.push(`<span>${data.contact.phone}</span>`);
+  if (data.contact?.email) contactParts.push(`<span><a href="mailto:${data.contact.email}" style="${linkStyle}">${data.contact.email}</a></span>`);
   
-  const linkParts: string[] = [];
   if (data.contact?.links) {
-     data.contact.links.forEach((link: string) => linkParts.push(`<a style="${linkStyle}" href="${link}">${link}</a>`));
+    data.contact.links.forEach((link: string) => {
+      let displayLink = link.replace(/https?:\/\/(www\.)?/, '');
+      if (displayLink.length > 25) displayLink = displayLink.substring(0, 25) + '...';
+      contactParts.push(`<span><a style="${linkStyle}" href="${link}" target="_blank" rel="noopener noreferrer">${displayLink}</a></span>`);
+    });
   }
-  html += linkParts.join(' &nbsp;&middot;&nbsp; ');
-  html += `</p>`;
+  contactHtml += contactParts.join(' <span style="color: #e5e7eb; font-weight: 300;">|</span> ');
+  contactHtml += `</div>`;
+
+  let html = `<div style="${containerStyle}">`;
+  html += `<div style="${nameStyle}">${data.fullName || ''}</div>`;
+  html += contactHtml;
 
   // Summary Section
   if (data.summary) {
-    html += `<h2 style="${sectionTitleStyle}">Professional Summary</h2>`;
+    html += `<div style="${sectionTitleStyle}">Professional Summary</div>`;
     html += `<p style="${bodyStyle}">${data.summary}</p>`;
   }
 
   // Skills Section
   if (data.skills?.length) {
-    html += `<h2 style="${sectionTitleStyle}">Skills</h2>`;
-    html += `<p style="${bodyStyle}"><strong>Core Competencies:</strong> ${data.skills.join(', ')}</p>`;
+    html += `<div style="${sectionTitleStyle}">Skills & Expertise</div>`;
+    html += `<div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;">`;
+    data.skills.forEach((skill: string) => {
+      html += `<span style="background-color: #f9fafb; color: #374151; font-size: 11.5px; font-weight: 500; padding: 3px 8px; border-radius: 4px; border: 1px solid #e5e7eb; display: inline-block;">${skill}</span>`;
+    });
+    html += `</div>`;
   }
 
   // Experience Section
   if (data.experience?.length) {
-    html += `<h2 style="${sectionTitleStyle}">Professional Experience</h2>`;
+    html += `<div style="${sectionTitleStyle}">Professional Experience</div>`;
     data.experience.forEach((exp: any) => {
-      html += `<p style="${bodyStyle}"><strong>${exp.role}</strong> <span style="float: right;">${exp.duration || ''}</span><br>${exp.company} ${exp.location ? `— ${exp.location}` : ''}</p>`;
+      html += `<div style="margin-bottom: 14px;">`;
+      html += `<div style="${itemHeaderStyle}"><span>${exp.role}</span><span style="font-size: 11.5px; font-weight: 500; color: #6b7280;">${exp.duration || ''}</span></div>`;
+      html += `<div style="${itemSubheaderStyle}"><span>${exp.company}</span><span>${exp.location || ''}</span></div>`;
       if (exp.bullets?.length) {
-        html += `<ul style="${bodyStyle}">`;
-        exp.bullets.forEach((b: string) => html += `<li>${b}</li>`);
+        html += `<ul style="${listStyle}">`;
+        exp.bullets.forEach((b: string) => html += `<li style="${listItemStyle}">${b}</li>`);
         html += `</ul>`;
       }
+      html += `</div>`;
     });
   }
 
   // Projects Section
   if (data.projects?.length) {
-    html += `<h2 style="${sectionTitleStyle}">Projects</h2>`;
+    html += `<div style="${sectionTitleStyle}">Projects</div>`;
     data.projects.forEach((proj: any) => {
-      html += `<p style="${bodyStyle}"><strong>${proj.name}</strong> <span style="float: right;">${proj.link || 'GitHub'}</span><br><em>${proj.technologies ? proj.technologies.join(', ') : ''}</em></p>`;
-      if (proj.description) {
-        html += `<ul style="${bodyStyle}"><li>${proj.description}</li></ul>`;
+      html += `<div style="margin-bottom: 14px;">`;
+      html += `<div style="${itemHeaderStyle}"><span>${proj.name}</span>`;
+      if (proj.link) {
+        let displayLink = proj.link.replace(/https?:\/\/(www\.)?/, '');
+        if (displayLink.length > 20) displayLink = displayLink.substring(0, 20) + '...';
+        html += `<span style="font-size: 11.5px; font-weight: 500;"><a href="${proj.link}" style="${linkStyle}" target="_blank" rel="noopener noreferrer">${displayLink}</a></span>`;
+      } else {
+        html += `<span style="font-size: 11.5px; font-weight: 500; color: #6b7280;">Project</span>`;
       }
+      html += `</div>`;
+      if (proj.technologies?.length) {
+        html += `<div style="font-size: 11px; color: #4b5563; font-style: italic; margin-bottom: 5px;">Technologies: ${proj.technologies.join(', ')}</div>`;
+      }
+      if (proj.description) {
+        html += `<p style="${bodyStyle}">${proj.description}</p>`;
+      }
+      html += `</div>`;
     });
   }
 
   // Education Section
   if (data.education?.length) {
-    html += `<h2 style="${sectionTitleStyle}">Education</h2>`;
+    html += `<div style="${sectionTitleStyle}">Education</div>`;
     data.education.forEach((edu: any) => {
-      html += `<p style="${bodyStyle}"><strong>${edu.degree} ${edu.field ? `(${edu.field})` : ''} — ${edu.institution}</strong> <span style="float: right;">${edu.duration || ''}</span><br>${edu.details || ''}</p>`;
+      html += `<div style="margin-bottom: 10px;">`;
+      html += `<div style="${itemHeaderStyle}"><span>${edu.degree}${edu.field ? ` in ${edu.field}` : ''}</span><span style="font-size: 11.5px; font-weight: 500; color: #6b7280;">${edu.duration || ''}</span></div>`;
+      html += `<div style="${itemSubheaderStyle}"><span>${edu.institution}</span><span></span></div>`;
+      if (edu.details) {
+        html += `<p style="${bodyStyle}; font-size: 12px; margin-top: -3px;">${edu.details}</p>`;
+      }
+      html += `</div>`;
     });
   }
 
   // Certifications Section
   if (data.certifications?.length) {
-    html += `<h2 style="${sectionTitleStyle}">Certifications</h2>`;
-    html += `<ul style="${bodyStyle}">` + data.certifications.map((c: string) => `<li>${c}</li>`).join('') + `</ul>`;
+    html += `<div style="${sectionTitleStyle}">Certifications</div>`;
+    html += `<ul style="${listStyle}">`;
+    data.certifications.forEach((c: string) => {
+      html += `<li style="${listItemStyle}">${c}</li>`;
+    });
+    html += `</ul>`;
   }
 
   // Languages Section
   if (data.languages?.length) {
-    html += `<h2 style="${sectionTitleStyle}">Languages</h2>`;
+    html += `<div style="${sectionTitleStyle}">Languages</div>`;
     html += `<p style="${bodyStyle}">${data.languages.join(', ')}</p>`;
   }
 
   // Achievements Section
   if (data.achievements?.length) {
-    html += `<h2 style="${sectionTitleStyle}">Key Achievements</h2>`;
-    html += `<ul style="${bodyStyle}">` + data.achievements.map((a: string) => `<li>${a}</li>`).join('') + `</ul>`;
+    html += `<div style="${sectionTitleStyle}">Key Achievements</div>`;
+    html += `<ul style="${listStyle}">`;
+    data.achievements.forEach((a: string) => {
+      html += `<li style="${listItemStyle}">${a}</li>`;
+    });
+    html += `</ul>`;
   }
 
+  html += `</div>`;
   return html;
 };
 

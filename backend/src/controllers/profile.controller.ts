@@ -3,6 +3,7 @@ import { prisma } from '../utils/prisma.ts';
 import { encrypt, decrypt, sendSmtpEmail } from '../services/smtp.service.ts';
 import { generateOutreachEmail, optimizeForJD } from '../services/groq.service.ts';
 import htmlPdf from 'html-pdf-node';
+import { compileResumeHtml } from './resume.controller.ts';
 
 const calculateCompletionScore = (profile: any): number => {
   let score = 0;
@@ -541,9 +542,11 @@ export const draftEmailAndCV = async (req: Request, res: Response) => {
     const parsedData = (resume.content as any)?.parsedData || {};
     const resumeText = JSON.stringify(parsedData);
 
+    const initialHtml = (resume.content as any)?.htmlContent || compileResumeHtml(parsedData);
+
     const [emailDraft, tailoredResult] = await Promise.all([
       generateOutreachEmail(resumeText, jobDescription),
-      optimizeForJD((resume.content as any)?.htmlContent || '', jobDescription)
+      optimizeForJD(initialHtml, jobDescription)
     ]);
 
     // Automatically save a new ResumeVersion for tracking and outreach integration
@@ -601,11 +604,48 @@ export const sendEmailWithCV = async (req: Request, res: Response) => {
       select: { id: true, smtpHost: true, smtpPort: true, smtpUser: true, smtpPass: true }
     });
 
-    if (!profile || !profile.smtpHost || !profile.smtpPort || !profile.smtpUser || !profile.smtpPass) {
-      return res.status(400).json({ success: false, code: 'SMTP_MISSING', error: 'SMTP configuration is incomplete.' });
+    if (!profile) {
+      return res.status(400).json({ success: false, error: 'Job seeker profile not found. Please complete your profile first.' });
     }
 
-    const decryptedPass = decrypt(profile.smtpPass);
+    let host = profile.smtpHost || '';
+    let port = profile.smtpPort ? Number(profile.smtpPort) : 587;
+    let user = profile?.smtpUser || '';
+    let decryptedPass = '';
+
+    if (profile?.smtpPass) {
+      try {
+        decryptedPass = decrypt(profile.smtpPass);
+      } catch (err) {
+        console.error('Failed to decrypt user SMTP password:', err);
+      }
+    }
+
+    if (!host || !user || !decryptedPass) {
+      const dbConfigs = await prisma.platformConfig.findMany({
+        where: {
+          key: { in: ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass'] }
+        }
+      });
+      const configMap = dbConfigs.reduce((acc, c) => ({ ...acc, [c.key]: c.value }), {} as Record<string, string>);
+      
+      host = configMap['smtp_host'] || host;
+      port = configMap['smtp_port'] ? Number(configMap['smtp_port']) : port;
+      user = configMap['smtp_user'] || user;
+      const encryptedPass = configMap['smtp_pass'] || '';
+      
+      if (encryptedPass) {
+        try {
+          decryptedPass = decrypt(encryptedPass);
+        } catch (err) {
+          console.error('Failed to decrypt global SMTP password:', err);
+        }
+      }
+    }
+
+    if (!host || !user || !decryptedPass) {
+      return res.status(400).json({ success: false, code: 'SMTP_MISSING', error: 'SMTP configuration is incomplete. Neither personal nor platform-wide credentials have been configured.' });
+    }
 
     const resume = await prisma.resume.findFirst({
       where: { id, jobSeekerProfileId: profile.id }
@@ -623,9 +663,9 @@ export const sendEmailWithCV = async (req: Request, res: Response) => {
     }
 
     await sendSmtpEmail({
-      host: profile.smtpHost,
-      port: profile.smtpPort,
-      user: profile.smtpUser,
+      host,
+      port,
+      user,
       pass: decryptedPass,
       to,
       subject,

@@ -6,6 +6,7 @@ import {
   Calendar, Check, AlertCircle, Clock, StickyNote, Award
 } from 'lucide-react';
 import Link from 'next/link';
+import { useGlassToast } from '@/app/components/GlassToastContainer';
 import { 
   getApplications, 
   createApplication, 
@@ -26,6 +27,7 @@ const COLUMNS = [
 ];
 
 export default function TrackerPage() {
+  const { showToast } = useGlassToast();
   const [apps, setApps] = useState<JobApplicationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCard, setActiveCard] = useState<JobApplicationItem | null>(null);
@@ -140,10 +142,11 @@ export default function TrackerPage() {
         setNewNotes('');
         setNewJdText('');
         setNewVersionId('');
+        showToast('Success', 'Application card created successfully!', 'success');
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to create application card.');
+      showToast('Error', 'Failed to create application card.', 'danger');
     } finally {
       setCreating(false);
     }
@@ -176,25 +179,28 @@ export default function TrackerPage() {
         const updated = res.data.data;
         setApps(prev => prev.map(app => app.id === updated.id ? updated : app));
         setActiveCard(updated);
+        showToast('Success', 'Details updated successfully.', 'success');
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to update details.');
+      showToast('Error', 'Failed to update details.', 'danger');
     } finally {
       setUpdating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this job application?')) return;
+    if (!window.confirm('Are you sure you want to delete this job application?')) return;
     try {
       const res = await deleteApplication(id);
       if (res.data.success) {
         setApps(prev => prev.filter(app => app.id !== id));
         setActiveCard(null);
+        showToast('Success', 'Application deleted successfully.', 'success');
       }
     } catch (err) {
       console.error(err);
+      showToast('Error', 'Failed to delete application.', 'danger');
     }
   };
 
@@ -225,7 +231,7 @@ export default function TrackerPage() {
       </header>
 
       {/* Board Columns container */}
-      <div className="flex-1 overflow-x-auto p-6 flex gap-4 items-start bg-[#070709]">
+      <div className="flex-1 overflow-hidden p-6 flex gap-3.5 items-stretch bg-[#070709]">
         {COLUMNS.map(col => {
           const colApps = apps.filter(app => app.status === col.id);
 
@@ -234,7 +240,7 @@ export default function TrackerPage() {
               key={col.id}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(col.id)}
-              className={`w-72 flex-shrink-0 flex flex-col max-h-full rounded-2xl border border-white/[0.02] p-4 ${col.bg} ${col.border}`}
+              className={`flex-1 min-w-0 flex flex-col rounded-2xl border border-white/[0.02] p-3.5 ${col.bg} ${col.border}`}
             >
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <div className="flex items-center gap-2">

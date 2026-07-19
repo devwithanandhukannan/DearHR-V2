@@ -1,6 +1,42 @@
 import Groq from 'groq-sdk';
+import { prisma } from '../utils/prisma.ts';
+import { decrypt } from './smtp.service.ts';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let cachedClient: Groq | null = null;
+let cachedKey: string | null = null;
+
+const getGroqClient = async (): Promise<Groq> => {
+  let apiKey = process.env.GROQ_API_KEY || '';
+  try {
+    const cfg = await prisma.platformConfig.findUnique({
+      where: { key: 'groq_api_key' }
+    });
+    if (cfg?.value) {
+      apiKey = decrypt(cfg.value);
+    }
+  } catch (err) {
+    console.error('Failed to get groq_api_key from DB:', err);
+  }
+
+  if (cachedClient && cachedKey === apiKey) {
+    return cachedClient;
+  }
+  cachedKey = apiKey;
+  cachedClient = new Groq({ apiKey });
+  return cachedClient;
+};
+
+const groq = {
+  chat: {
+    completions: {
+      create: async (params: any, options?: any) => {
+        const client = await getGroqClient();
+        return client.chat.completions.create(params, options);
+      }
+    }
+  }
+} as unknown as Groq;
+
 const MODEL = 'llama-3.3-70b-versatile';
 
 const normalizeScores = (scores: any) => {
@@ -228,16 +264,22 @@ ${htmlContent}
 };
 
 export const convertToHTML = async (parsedData: any) => {
-  const prompt = `Convert this structured resume data into a clean, professional HTML resume.
-The layout should closely match the user's original CV style.
-Return ONLY valid JSON — no markdown.
+  const prompt = `Convert this structured resume data into a highly professional, modern HTML resume matching high-end executive resumes.
+Return ONLY valid JSON — no markdown wrapper.
 
 Parsed Data:
 ${JSON.stringify(parsedData, null, 2)}
 
-Same HTML rules: inline styles only, no wrapper tags, Georgia/serif font.
-Name as <h1>, section headings as <h2> with border-bottom dividers.
-Return: { "htmlContent": "<html>" }`;
+Strict Formatting Rules (use inline styles on elements):
+1. Wrap everything in a container: <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; line-height: 1.5; font-size: 13px; padding: 36px 40px; background: #ffffff; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+2. Header Name: <div style="font-size: 22px; font-weight: 800; text-align: center; color: #111827; letter-spacing: -0.02em; margin: 0 0 6px 0; text-transform: uppercase;">
+3. Contact Details: Center-aligned, comma/pipe separated using thin gray dividers, email/links as clickable blue links with clean, shortened display text (e.g. remove "https://").
+4. Section Headings (Summary, Skills, Experience, Education, Projects, etc.): <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #111827; border-bottom: 1.5px solid #e5e7eb; padding-bottom: 4px; margin-top: 20px; margin-bottom: 10px;">
+5. Professional Experience & Projects: Align dates/locations to the right using <div style="display: flex; justify-content: space-between; align-items: baseline;">.
+6. Skills: Displayed as compact inline badges rather than comma-separated lists: <span style="background-color: #f9fafb; color: #374151; font-size: 11.5px; font-weight: 500; padding: 3px 8px; border-radius: 4px; border: 1px solid #e5e7eb; display: inline-block; margin-right: 5px; margin-bottom: 5px;">
+7. Bullet Points: Use standard <ul> with padding and disc styles: <ul style="margin: 4px 0 10px 0; padding-left: 18px; list-style-type: disc; color: #4b5563; font-size: 12.5px;">
+
+Return strictly in this format: { "htmlContent": "HTML_STRING_HERE" }`;
 
   const completion = await groq.chat.completions.create({
     messages: [{ role: 'user', content: prompt }],

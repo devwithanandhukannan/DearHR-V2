@@ -323,3 +323,138 @@ export const deleteAdminCandidate = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };
+
+// ─── Admin Extended Stats ─────────────────────────────────────────────────────
+
+export const getAdminStats = async (req: Request, res: Response) => {
+  try {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers,
+      totalResumes,
+      totalVersions,
+      totalApplications,
+      totalJobDescriptions,
+      newUsersThisWeek,
+      newUsersThisMonth,
+      avgAtsData,
+      recentCandidates,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.resume.count(),
+      prisma.resumeVersion.count(),
+      prisma.jobApplication.count(),
+      prisma.jobDescription.count(),
+      prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.user.count({ where: { createdAt: { gte: monthAgo } } }),
+      prisma.resume.aggregate({ _avg: { atsScore: true } }),
+      prisma.jobSeekerProfile.findMany({
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          location: true,
+          createdAt: true,
+          resumes: { select: { atsScore: true } },
+        },
+      }),
+    ]);
+
+    // Daily new user counts for last 7 days
+    const dailyStats: { date: string; count: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const start = new Date(now);
+      start.setDate(now.getDate() - i);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setHours(23, 59, 59, 999);
+      const count = await prisma.user.count({ where: { createdAt: { gte: start, lte: end } } });
+      dailyStats.push({
+        date: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        count,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        totalUsers,
+        totalResumes,
+        totalVersions,
+        totalApplications,
+        totalJobDescriptions,
+        newUsersThisWeek,
+        newUsersThisMonth,
+        avgAtsScore: avgAtsData._avg.atsScore ? Math.round(Number(avgAtsData._avg.atsScore)) : 0,
+        avgResumesPerUser: totalUsers > 0 ? (totalResumes / totalUsers).toFixed(1) : '0.0',
+      },
+      dailyStats,
+      recentCandidates,
+    });
+  } catch (error) {
+    console.error('getAdminStats error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+// ─── Platform Config ──────────────────────────────────────────────────────────
+
+import { encrypt, decrypt } from '../services/smtp.service.ts';
+
+export const getPlatformConfig = async (req: Request, res: Response) => {
+  try {
+    const configs = await prisma.platformConfig.findMany();
+    const result: Record<string, string> = {};
+
+    for (const cfg of configs) {
+      if (cfg.isSecret) {
+        // Return masked value — don't expose plaintext secrets via API
+        result[cfg.key] = cfg.value ? '••••••••' : '';
+      } else {
+        result[cfg.key] = cfg.value;
+      }
+    }
+
+    return res.status(200).json({ success: true, config: result });
+  } catch (error) {
+    console.error('getPlatformConfig error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+export const savePlatformConfig = async (req: Request, res: Response) => {
+  try {
+    const { groq_api_key, smtp_host, smtp_port, smtp_user, smtp_pass, platform_name } = req.body;
+
+    const updates: { key: string; value: string; isSecret: boolean }[] = [];
+
+    if (groq_api_key !== undefined && groq_api_key !== '••••••••') {
+      updates.push({ key: 'groq_api_key', value: groq_api_key ? encrypt(groq_api_key) : '', isSecret: true });
+    }
+    if (smtp_host !== undefined)      updates.push({ key: 'smtp_host', value: smtp_host, isSecret: false });
+    if (smtp_port !== undefined)      updates.push({ key: 'smtp_port', value: String(smtp_port), isSecret: false });
+    if (smtp_user !== undefined)      updates.push({ key: 'smtp_user', value: smtp_user, isSecret: false });
+    if (smtp_pass !== undefined && smtp_pass !== '••••••••') {
+      updates.push({ key: 'smtp_pass', value: smtp_pass ? encrypt(smtp_pass) : '', isSecret: true });
+    }
+    if (platform_name !== undefined)  updates.push({ key: 'platform_name', value: platform_name, isSecret: false });
+
+    for (const upd of updates) {
+      await prisma.platformConfig.upsert({
+        where:  { key: upd.key },
+        update: { value: upd.value, isSecret: upd.isSecret },
+        create: { key: upd.key, value: upd.value, isSecret: upd.isSecret },
+      });
+    }
+
+    return res.status(200).json({ success: true, message: 'Platform config saved.' });
+  } catch (error) {
+    console.error('savePlatformConfig error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};

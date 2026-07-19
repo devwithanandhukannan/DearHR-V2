@@ -73,7 +73,7 @@ export default function AdminTalentPoolPage() {
 
   const handleDelete = async (candidate: Candidate) => {
     if (
-      !confirm(
+      !window.confirm(
         `Delete candidate "${candidate.fullName}" and all associated resumes? This action is permanent.`
       )
     )

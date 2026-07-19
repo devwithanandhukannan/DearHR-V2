@@ -1107,6 +1107,38 @@ export default function ResumeEditorPage() {
             parent?.removeChild(mark);
           });
 
+          // Auto-convert border-bottom dividers into clean, editable <hr> elements
+          const headings = doc.querySelectorAll('h2, h1, div, p');
+          headings.forEach(heading => {
+            const el = heading as HTMLElement;
+            const styleAttr = el.getAttribute('style') || '';
+            const hasBorderBottom = styleAttr.includes('border-bottom') || el.style.borderBottom;
+            const isH2 = el.tagName.toLowerCase() === 'h2';
+
+            if (hasBorderBottom || isH2) {
+              // Strip border-bottom styles
+              const newStyle = styleAttr
+                .replace(/border-bottom-width\s*:[^;]+;?/gi, '')
+                .replace(/border-bottom-style\s*:[^;]+;?/gi, '')
+                .replace(/border-bottom-color\s*:[^;]+;?/gi, '')
+                .replace(/border-bottom\s*:[^;]+;?/gi, '')
+                .replace(/padding-bottom\s*:[^;]+;?/gi, '');
+              
+              if (newStyle.trim()) {
+                el.setAttribute('style', newStyle);
+              } else {
+                el.removeAttribute('style');
+              }
+
+              // Check if followed by hr
+              let next = el.nextElementSibling;
+              if (!next || next.tagName.toLowerCase() !== 'hr') {
+                const hr = doc.createElement('hr');
+                el.parentNode?.insertBefore(hr, el.nextSibling);
+              }
+            }
+          });
+
           const dateRegex = /(?:\s|—|-|–)*\(?((?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}|\d{4})\s*(?:-|—|–|to)\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}|\d{4}|Present|In Progress))\)?\s*$/i;
           
           const walk = document.createTreeWalker(doc.body, 4 /* NodeFilter.SHOW_TEXT */, null);
@@ -1294,7 +1326,7 @@ export default function ResumeEditorPage() {
 
   // ─── Version restore ─────────────────────────────────────────────────
   const handleVersionRestore = useCallback(async (version: ResumeVersion) => {
-    if (!editor || !confirm(`Restore "${version.label}"?`)) return;
+    if (!editor || !window.confirm(`Restore "${version.label}"?`)) return;
     try {
       const res = await restoreVersion(id, version.id);
       editor.commands.setContent(res.data.data.htmlContent);
@@ -1310,7 +1342,7 @@ export default function ResumeEditorPage() {
     win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${resumeName}</title><style>
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:"Times New Roman",Times,serif;font-size:13.5px;line-height:1.35;color:#000;padding:${margins.top}px ${margins.right}px ${margins.bottom}px ${margins.left}px;max-width:${PAGE_W}px;margin:0 auto}
 h1{font-size:24px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#000;margin-bottom:2px;text-align:center}
-h2{font-size:14.5px;font-weight:700;color:#000;margin-top:10px;margin-bottom:2px;padding-bottom:2px;border-bottom:1px solid #000}
+h2{font-size:14.5px;font-weight:700;color:#000;margin-top:10px;margin-bottom:2px;padding-bottom:0px;border-bottom:none}
 p{margin-bottom:2px}ul,ol{margin-left:20px;margin-bottom:2px}li{margin-bottom:1px;padding-left:2px}
 a{color:#000;text-decoration:none}hr{border:none;border-top:1px solid #000;margin:6px 0}strong{font-weight:700}em{font-style:italic}
 @media print{body{padding:20px}@page{margin:15mm}}
@@ -1343,13 +1375,31 @@ a{color:#000;text-decoration:none}hr{border:none;border-top:1px solid #000;margi
     .ProseMirror mark { border-radius: 2px; padding: 0 2px; }
     
     .ProseMirror h1 { font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #000; margin-bottom: 2px; text-align: center; }
-    .ProseMirror h2 { font-size: 14.5px; font-weight: 700; color: #000; margin-top: 10px; margin-bottom: 2px; padding-bottom: 2px; border-bottom: 1px solid #000; }
+    .ProseMirror h2 { font-size: 14.5px; font-weight: 700; color: #000; margin-top: 10px; margin-bottom: 2px; padding-bottom: 0px; border-bottom: none; }
     .ProseMirror h3 { font-size: 13.5px; font-weight: 700; color: #000; margin-top: 6px; margin-bottom: 2px; }
     .ProseMirror p { margin-bottom: 2px; color: #000; }
     .ProseMirror ul { list-style-type: disc; margin-left: 20px; margin-bottom: 2px; }
     .ProseMirror ol { list-style-type: decimal; margin-left: 20px; margin-bottom: 2px; }
     .ProseMirror li { margin-bottom: 1px; color: #000; padding-left: 2px; }
-    .ProseMirror hr { border: none; border-top: 1px solid #000; margin: 6px 0; }
+    .ProseMirror hr {
+      border: none;
+      border-top: 1px solid #000;
+      margin: 12px 0;
+      padding: 6px 0;
+      background-clip: content-box;
+      cursor: pointer;
+      display: block;
+      height: auto;
+      transition: all 0.15s ease;
+    }
+    .ProseMirror hr:hover {
+      border-top: 1.5px solid #3b82f6;
+    }
+    .ProseMirror hr.ProseMirror-selectednode {
+      border-top: 1.5px solid #2563eb;
+      background-color: rgba(37,99,235,0.08);
+      outline: 1.5px solid rgba(37,99,235,0.3);
+    }
 
     @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
     .animate-in { animation: slideDown 0.15s ease; }

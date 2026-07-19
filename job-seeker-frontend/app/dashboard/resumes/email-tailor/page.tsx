@@ -1,7 +1,7 @@
 // PATH: src/app/dashboard/resumes/email-tailor/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -495,15 +495,8 @@ export default function EmailTailorPage() {
               <span className="text-[10px] bg-green-500/10 border border-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium uppercase font-mono">Tailored Version</span>
             )}
           </div>
-          <div className="flex-1 p-8 overflow-y-auto flex items-start justify-center bg-[#050505] scrollbar-thin">
-            <div className="w-full max-w-[800px] aspect-[1/1.414] bg-white border border-[#2c2c2e] rounded-xl shadow-2xl overflow-hidden relative">
-              <iframe
-                title="CV Preview"
-                srcDoc={attachTailored && tailoredHtml ? tailoredHtml : originalHtml}
-                className="w-full h-full border-none bg-white"
-                sandbox="allow-same-origin"
-              />
-            </div>
+          <div className="flex-1 overflow-hidden bg-[#050505] flex items-center justify-center">
+            <CVPreviewFrame html={getStyledCvHtml(attachTailored && tailoredHtml ? tailoredHtml : originalHtml)} />
           </div>
         </section>
       </div>
@@ -595,6 +588,179 @@ export default function EmailTailorPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function getStyledCvHtml(cvHtml: string): string {
+  if (!cvHtml) return '';
+  
+  let bodyContent = cvHtml;
+  if (cvHtml.includes('<body')) {
+    const match = cvHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    if (match) bodyContent = match[1];
+  }
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+          
+          body { 
+            padding: 30px 36px !important; 
+            max-width: 800px !important; 
+            margin: 0 auto !important; 
+            font-family: 'Inter', -apple-system, sans-serif !important;
+            background: #ffffff !important;
+            color: #1f2937 !important;
+            line-height: 1.5 !important;
+            font-size: 13px !important;
+            box-sizing: border-box !important;
+          }
+          * {
+            box-sizing: border-box !important;
+          }
+          
+          h1, .name {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 24px !important;
+            font-weight: 800 !important;
+            text-align: center !important;
+            color: #111827 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px 0 !important;
+            text-transform: uppercase !important;
+          }
+          
+          h2 {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.08em !important;
+            color: #111827 !important;
+            border-bottom: 1.5px solid #e5e7eb !important;
+            padding-bottom: 4px !important;
+            margin-top: 20px !important;
+            margin-bottom: 10px !important;
+          }
+          
+          p, li {
+            font-size: 13px !important;
+            color: #374151 !important;
+            line-height: 1.5 !important;
+          }
+          
+          ul {
+            margin: 4px 0 10px 0 !important;
+            padding-left: 18px !important;
+            list-style-type: disc !important;
+            color: #4b5563 !important;
+          }
+          
+          li {
+            margin-bottom: 3px !important;
+            line-height: 1.45 !important;
+          }
+          
+          a {
+            color: #2563eb !important;
+            text-decoration: none !important;
+            border-bottom: 1px dashed rgba(37,99,235,0.4) !important;
+          }
+          
+          /* Custom scrollbar inside iframe */
+          ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+          ::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 99px;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+          }
+        </style>
+      </head>
+      <body>
+        ${bodyContent}
+      </body>
+    </html>
+  `;
+}
+
+function CVPreviewFrame({ html }: { html: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleResize = () => {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const targetWidth = 800;
+      const targetHeight = 1130;
+      
+      const newScale = Math.min((containerWidth - 32) / targetWidth, (containerHeight - 32) / targetHeight, 1);
+      setScale(newScale);
+    };
+
+    handleResize();
+    const timer = setTimeout(handleResize, 100);
+
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(container);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
+
+  const targetWidth = 800;
+  const targetHeight = 1130;
+
+  return (
+    <div ref={containerRef} className="w-full h-full flex justify-center items-center overflow-hidden p-4">
+      <div 
+        style={{
+          width: `${targetWidth * scale}px`,
+          height: `${targetHeight * scale}px`,
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        className="shrink-0"
+      >
+        <div
+          style={{
+            width: `${targetWidth}px`,
+            height: `${targetHeight}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: 0,
+            left: 0
+          }}
+          className="bg-white border border-zinc-800 rounded-xl shadow-2xl overflow-hidden"
+        >
+          <iframe
+            title="CV Preview"
+            srcDoc={html}
+            className="w-full h-full border-none bg-white"
+            sandbox="allow-same-origin"
+            style={{ pointerEvents: 'none' }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

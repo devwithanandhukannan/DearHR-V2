@@ -1,13 +1,14 @@
 // PATH: src/app/dashboard/resumes/tailor-version/[id]/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Sparkles, Loader2, Download, CheckCircle2, AlertCircle, FileText,
   Mail, Save, Flame, RefreshCw, Eye, Award, Check, X, Clipboard, ExternalLink, Calendar, StickyNote
 } from 'lucide-react';
+import { useGlassToast } from '@/app/components/GlassToastContainer';
 import {
   getResumeVersionById,
   generateCoverLetterForVersion,
@@ -22,6 +23,7 @@ import {
 } from '@/app/lib/resumeApi';
 
 export default function TailoredVersionPage() {
+  const { showToast } = useGlassToast();
   const params = useParams();
   const router = useRouter();
   const versionId = params.id as string;
@@ -155,10 +157,11 @@ export default function TailoredVersionPage() {
         setBody(res.data.data.body || '');
         setLetterSaveStatus('saved');
         setTimeout(() => setLetterSaveStatus('idle'), 2000);
+        showToast('Success', 'Cover letter generated.', 'success');
       }
     } catch (e) {
       console.error(e);
-      alert('Generation failed.');
+      showToast('Error', 'Generation failed.', 'danger');
     } finally {
       setGeneratingLetter(false);
     }
@@ -175,10 +178,11 @@ export default function TailoredVersionPage() {
       if (res.data.success) {
         setOutreachSubject(res.data.data.subject || '');
         setOutreachBody(res.data.data.body);
+        showToast('Success', 'Outreach message generated.', 'success');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to generate outreach template.');
+      showToast('Error', 'Failed to generate outreach template.', 'danger');
     } finally {
       setGeneratingOutreach(false);
     }
@@ -200,11 +204,11 @@ export default function TailoredVersionPage() {
           };
         });
         setSelectedKeywords([]);
-        alert('Keywords successfully injected into resume HTML!');
+        showToast('Success', 'Keywords successfully injected into resume HTML!', 'success');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to inject keywords.');
+      showToast('Error', 'Failed to inject keywords.', 'danger');
     } finally {
       setInjecting(false);
     }
@@ -223,10 +227,11 @@ export default function TailoredVersionPage() {
           ...prev,
           [qId]: res.data.data
         }));
+        showToast('Success', 'Feedback received.', 'success');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to get feedback.');
+      showToast('Error', 'Failed to get feedback.', 'danger');
     } finally {
       setSubmittingAnswerId(null);
     }
@@ -253,11 +258,12 @@ export default function TailoredVersionPage() {
             application: res.data.data
           };
         });
+        showToast('Success', 'Successfully pushed to Kanban board!', 'success');
       }
     } catch (e) {
       console.error(e);
       setPushStatus('idle');
-      alert('Failed to push to Kanban.');
+      showToast('Error', 'Failed to push to Kanban.', 'danger');
     }
   };
 
@@ -312,69 +318,106 @@ export default function TailoredVersionPage() {
   const cvHtml = version.content?.htmlContent || '';
 
   // Inject professional styles into the tailored CV HTML document
-  const styledCvHtml = cvHtml.includes('</head>')
-    ? cvHtml.replace('</head>', `<style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
-        body { 
-          padding: 50px 60px !important; 
-          max-width: 850px !important; 
-          margin: 0 auto !important; 
-          font-family: 'Inter', -apple-system, sans-serif !important;
-          background: white !important;
-          color: #1a1a24 !important;
-          line-height: 1.6 !important;
-        }
-        h1, h2, h3, h4, .title, .name {
-          font-family: 'Outfit', sans-serif !important;
-          color: #0f172a !important;
-        }
-        h1 {
-          font-size: 2.2rem !important;
-          font-weight: 700 !important;
-          letter-spacing: -0.025em !important;
-        }
-        h2 {
-          font-size: 1.25rem !important;
-          border-bottom: 2px solid #e2e8f0 !important;
-          padding-bottom: 6px !important;
-          margin-top: 24px !important;
-          margin-bottom: 12px !important;
-          font-weight: 600 !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.05em !important;
-        }
-        p, li {
-          font-size: 0.9rem !important;
-          color: #334155 !important;
-        }
-        ul {
-          margin-top: 6px !important;
-          margin-bottom: 6px !important;
-          padding-left: 20px !important;
-        }
-        li {
-          margin-bottom: 4px !important;
-        }
-        a {
-          color: #4f46e5 !important;
-          text-decoration: none !important;
-        }
-        /* Custom scrollbar inside iframe */
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #f8fafc;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-      </style></head>`)
-    : cvHtml;
+  let bodyContent = cvHtml;
+  if (cvHtml.includes('<body')) {
+    const match = cvHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    if (match) bodyContent = match[1];
+  }
+
+  const styledCvHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+          
+          body { 
+            padding: 30px 36px !important; 
+            max-width: 800px !important; 
+            margin: 0 auto !important; 
+            font-family: 'Inter', -apple-system, sans-serif !important;
+            background: #ffffff !important;
+            color: #1f2937 !important;
+            line-height: 1.5 !important;
+            font-size: 13px !important;
+            box-sizing: border-box !important;
+          }
+          * {
+            box-sizing: border-box !important;
+          }
+          
+          h1, .name {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 24px !important;
+            font-weight: 800 !important;
+            text-align: center !important;
+            color: #111827 !important;
+            letter-spacing: -0.02em !important;
+            margin: 0 0 6px 0 !important;
+            text-transform: uppercase !important;
+          }
+          
+          h2 {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.08em !important;
+            color: #111827 !important;
+            border-bottom: 1.5px solid #e5e7eb !important;
+            padding-bottom: 4px !important;
+            margin-top: 20px !important;
+            margin-bottom: 10px !important;
+          }
+          
+          p, li {
+            font-size: 13px !important;
+            color: #374151 !important;
+            line-height: 1.5 !important;
+          }
+          
+          ul {
+            margin: 4px 0 10px 0 !important;
+            padding-left: 18px !important;
+            list-style-type: disc !important;
+            color: #4b5563 !important;
+          }
+          
+          li {
+            margin-bottom: 3px !important;
+            line-height: 1.45 !important;
+          }
+          
+          a {
+            color: #2563eb !important;
+            text-decoration: none !important;
+            border-bottom: 1px dashed rgba(37,99,235,0.4) !important;
+          }
+          
+          /* Custom scrollbar inside iframe */
+          ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+          ::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 99px;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+          }
+        </style>
+      </head>
+      <body>
+        ${bodyContent}
+      </body>
+    </html>
+  `;
 
   // Extract matched and missing keywords from version content
   const contentJSON = version.content as any;
@@ -531,15 +574,9 @@ export default function TailoredVersionPage() {
               </button>
             </div>
 
-            <div className="flex-1 p-6 xl:p-8 bg-[#070709] overflow-y-auto flex items-center justify-center">
+            <div className="flex-1 overflow-hidden bg-[#070709] flex items-center justify-center">
               {cvHtml ? (
-                <div className="w-full max-w-[800px] h-[calc(100vh-180px)] bg-white rounded-2xl shadow-2xl overflow-hidden border border-white/5 relative">
-                  <iframe
-                    srcDoc={styledCvHtml}
-                    className="w-full h-full border-none"
-                    title="Tailored CV Live Preview"
-                  />
-                </div>
+                <CVPreviewFrame html={styledCvHtml} />
               ) : (
                 <div className="w-full max-w-md aspect-video flex flex-col items-center justify-center border border-[#1a1a24] border-dashed rounded-xl bg-white/[0.02] p-6 text-center animate-fade-in">
                   <FileText className="text-gray-700 mb-2" size={28} />
@@ -683,7 +720,7 @@ export default function TailoredVersionPage() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(outreachBody);
-                          alert('Outreach body copied to clipboard!');
+                          showToast('Copied', 'Outreach body copied to clipboard!', 'success');
                         }}
                         className="bg-zinc-800 text-zinc-200 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
                       >
@@ -943,7 +980,7 @@ export default function TailoredVersionPage() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(salaryData.emailScript);
-                          alert('Email script copied!');
+                          showToast('Copied', 'Email script copied!', 'success');
                         }}
                         className="bg-zinc-800 hover:text-white text-zinc-200 text-xs font-semibold py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors mt-2"
                       >
@@ -964,7 +1001,7 @@ export default function TailoredVersionPage() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(salaryData.liveScript);
-                          alert('Discussion script copied!');
+                          showToast('Copied', 'Discussion script copied!', 'success');
                         }}
                         className="bg-zinc-800 hover:text-white text-zinc-200 text-xs font-semibold py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors mt-2"
                       >
@@ -982,6 +1019,74 @@ export default function TailoredVersionPage() {
 
       </div>
 
+    </div>
+  );
+}
+
+function CVPreviewFrame({ html }: { html: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleResize = () => {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const targetWidth = 800;
+      const targetHeight = 1130;
+      
+      const newScale = Math.min((containerWidth - 32) / targetWidth, (containerHeight - 32) / targetHeight, 1);
+      setScale(newScale);
+    };
+
+    handleResize();
+    const timer = setTimeout(handleResize, 100);
+
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(container);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
+
+  const targetWidth = 800;
+  const targetHeight = 1130;
+
+  return (
+    <div ref={containerRef} className="w-full h-full flex justify-center items-center overflow-hidden p-4">
+      <div 
+        style={{
+          width: `${targetWidth * scale}px`,
+          height: `${targetHeight * scale}px`,
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        className="shrink-0"
+      >
+        <div
+          style={{
+            width: `${targetWidth}px`,
+            height: `${targetHeight}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: 0,
+            left: 0
+          }}
+          className="bg-white border border-zinc-850 rounded-xl shadow-2xl overflow-hidden"
+        >
+          <iframe
+            title="CV Preview"
+            srcDoc={html}
+            className="w-full h-full border-none bg-white"
+            sandbox="allow-same-origin"
+            style={{ pointerEvents: 'none' }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
