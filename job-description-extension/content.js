@@ -1,26 +1,17 @@
-// content.js - Job Description extraction script
+// content.js - Job Description & JARVIS Platform Intel Extraction
 (() => {
-  // 1. Prioritize active user selection (highlighted text)
-  const selection = window.getSelection().toString().trim();
-  if (selection) {
-    let guessedTitle = '';
-    const h1 = document.querySelector('h1');
-    if (h1) guessedTitle = h1.innerText.trim();
-    
-    return {
-      text: selection,
-      title: document.title || '',
-      url: window.location.href || '',
-      customTitle: guessedTitle || undefined,
-      customCompany: undefined
-    };
-  }
-
-  // 2. Target specific platforms
   const url = window.location.href;
+  const domain = window.location.hostname;
+  const selection = window.getSelection().toString().trim();
+  
   let text = '';
   let customTitle = '';
   let customCompany = '';
+  let postedBy = '';
+  let location = '';
+  let salary = '';
+
+  const clean = (str) => (str || '').replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
 
   if (url.includes('linkedin.com')) {
     // LinkedIn Selectors
@@ -41,6 +32,19 @@
                    document.querySelector('.jobs-unified-top-card__primary-description a');
     if (compEl) customCompany = compEl.innerText || compEl.textContent || '';
 
+    const posterEl = document.querySelector('.jobs-poster__name') ||
+                     document.querySelector('.hiring-team__name') ||
+                     document.querySelector('.jobs-unified-top-card__posted-by');
+    if (posterEl) postedBy = posterEl.innerText || posterEl.textContent || '';
+
+    const locEl = document.querySelector('.jobs-unified-top-card__bullet') ||
+                  document.querySelector('.job-details-jobs-unified-top-card__primary-description-container');
+    if (locEl) location = locEl.innerText || locEl.textContent || '';
+
+    const salEl = document.querySelector('.jobs-unified-top-card__salary-info') ||
+                  document.querySelector('.salary-compensation-text');
+    if (salEl) salary = salEl.innerText || salEl.textContent || '';
+
   } else if (url.includes('indeed.com')) {
     // Indeed Selectors
     const descEl = document.getElementById('jobDescriptionText') || 
@@ -57,6 +61,14 @@
                    document.querySelector('.jobsearch-InlineCompanyRating div');
     if (compEl) customCompany = compEl.innerText || compEl.textContent || '';
 
+    const locEl = document.querySelector('[data-testid="job-location"]') ||
+                  document.querySelector('.jobsearch-JobInfoHeader-subtitle');
+    if (locEl) location = locEl.innerText || locEl.textContent || '';
+
+    const salEl = document.querySelector('#salaryInfoAndJobType') ||
+                  document.querySelector('.jobsearch-JobMetadataHeader-item');
+    if (salEl) salary = salEl.innerText || salEl.textContent || '';
+
   } else if (url.includes('naukri.com')) {
     // Naukri Selectors
     const descEl = document.querySelector('.job-desc') || 
@@ -70,13 +82,19 @@
     const compEl = document.querySelector('.jd-header-comp-name') || 
                    document.querySelector('.jd-header-comp-name a');
     if (compEl) customCompany = compEl.innerText || compEl.textContent || '';
+
+    const locEl = document.querySelector('.loc') || document.querySelector('.location');
+    if (locEl) location = locEl.innerText || locEl.textContent || '';
+
+    const salEl = document.querySelector('.salary');
+    if (salEl) salary = salEl.innerText || salEl.textContent || '';
   }
 
-  // Clean custom values
-  if (customTitle) customTitle = customTitle.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
-  if (customCompany) customCompany = customCompany.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
+  if (selection) {
+    text = selection;
+  }
 
-  // 3. Fallback to full body text if no specific container matches
+  // Fallback to full body text if no specific container matches
   if (!text) {
     const bodyClone = document.body.cloneNode(true);
     const selectors = 'script, style, noscript, iframe, nav, footer, header, svg, path';
@@ -90,10 +108,15 @@
     .trim();
 
   return {
-    text: cleanText.substring(0, 15000), // Cap at 15k characters
+    text: cleanText.substring(0, 15000),
     title: document.title || '',
     url: window.location.href || '',
-    customTitle: customTitle || undefined,
-    customCompany: customCompany || undefined
+    domain: domain || '',
+    customTitle: clean(customTitle) || undefined,
+    customCompany: clean(customCompany) || undefined,
+    postedBy: clean(postedBy) || undefined,
+    location: clean(location) || undefined,
+    salary: clean(salary) || undefined
   };
 })();
+
