@@ -4,43 +4,43 @@
   <meta charset="utf-8">
   <style>
     :root {
-      --bg-dark: rgba(6, 9, 18, 0.94);
-      --bg-card: rgba(15, 22, 38, 0.75);
-      --border-hud: rgba(0, 240, 255, 0.2);
-      --border-glow: rgba(0, 240, 255, 0.4);
-      --cyan: #00f0ff;
-      --violet: #8b5cf6;
-      --cyan-glow: rgba(0, 240, 255, 0.25);
-      --violet-glow: rgba(139, 92, 246, 0.25);
-      --text-main: #f3f4f6;
-      --text-muted: #94a3b8;
-      --green: #10b981;
-      --amber: #f59e0b;
-      --red: #ef4444;
+      --apple-bg: rgba(14, 15, 19, 0.92);
+      --apple-card: rgba(26, 27, 34, 0.65);
+      --apple-card-inner: rgba(34, 35, 44, 0.5);
+      --apple-border: rgba(255, 255, 255, 0.08);
+      --apple-border-focus: rgba(255, 255, 255, 0.2);
+      --apple-blue: #0a84ff;
+      --apple-blue-hover: #409cff;
+      --apple-green: #30d158;
+      --apple-amber: #ffd60a;
+      --apple-red: #ff453a;
+      --apple-text: #f5f5f7;
+      --apple-subtext: #86868b;
+      --apple-muted: #6e6e73;
     }
 
     * {
       box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
     body {
       width: 380px;
       margin: 0;
       padding: 14px;
-      background: #030712;
+      background-color: #0b0c10;
       background-image: 
-        radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
-      color: var(--text-main);
+        radial-gradient(circle at 50% 0%, rgba(10, 132, 255, 0.08) 0%, transparent 50%);
+      color: var(--apple-text);
       overflow-x: hidden;
     }
 
     /* Scrollbar */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.2); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
     .container {
       display: flex;
@@ -48,131 +48,106 @@
       gap: 12px;
     }
 
-    /* Top HUD Header */
-    .hud-header {
+    /* Apple Minimal Header */
+    .apple-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
-      background: var(--bg-card);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-hud);
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.05);
-      position: relative;
+      padding: 4px 2px;
     }
 
-    .hud-header::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 10%;
-      width: 80%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-    }
-
-    .brand-box {
+    .brand-group {
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .arc-reactor {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      border: 2px solid var(--cyan);
-      box-shadow: 0 0 8px var(--cyan);
-      animation: pulse-arc 2s infinite ease-in-out;
-    }
-
-    @keyframes pulse-arc {
-      0%, 100% { opacity: 0.7; transform: scale(1); box-shadow: 0 0 6px var(--cyan); }
-      50% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 14px var(--cyan); }
-    }
-
-    .logo-text {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 50%, var(--violet) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .hud-tag {
-      font-family: monospace;
-      font-size: 9px;
-      color: var(--cyan);
-      background: rgba(0, 240, 255, 0.1);
-      border: 1px solid rgba(0, 240, 255, 0.3);
-      padding: 2px 6px;
-      border-radius: 4px;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    /* Nav Tabs Switcher */
-    .nav-tabs {
+    .brand-icon {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+      border-radius: 6px;
       display: flex;
-      background: rgba(10, 15, 28, 0.8);
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 11px;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    .header-badge {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--apple-subtext);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--apple-border);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    /* Apple Segmented Control Tab Switcher */
+    .segmented-control {
+      display: flex;
+      background: rgba(255, 255, 255, 0.05);
       padding: 3px;
       border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      gap: 4px;
+      border: 1px solid var(--apple-border);
+      gap: 2px;
     }
 
-    .nav-tab {
+    .segmented-tab {
       flex: 1;
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      padding: 7px 0;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 8px;
+      color: var(--apple-subtext);
+      padding: 6px 0;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 7px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 5px;
     }
 
-    .nav-tab:hover {
-      color: var(--text-main);
+    .segmented-tab:hover {
+      color: var(--apple-text);
     }
 
-    .nav-tab.active {
-      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(139, 92, 246, 0.15));
-      border: 1px solid rgba(0, 240, 255, 0.3);
+    .segmented-tab.active {
+      background: rgba(255, 255, 255, 0.12);
       color: #ffffff;
-      box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
-      text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
-    /* Glass Card Containers */
-    .glass-panel {
-      background: var(--bg-card);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-hud);
-      border-radius: 12px;
-      padding: 12px;
+    /* Apple Translucent Panel */
+    .apple-panel {
+      background: var(--apple-card);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--apple-border);
+      border-radius: 14px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      gap: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
     }
 
     label {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--apple-subtext);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -180,30 +155,30 @@
 
     input, textarea {
       width: 100%;
-      background: rgba(3, 7, 18, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 8px 10px;
-      color: var(--text-main);
+      background: rgba(18, 19, 24, 0.8);
+      border: 1px solid var(--apple-border);
+      border-radius: 9px;
+      padding: 8px 11px;
+      color: var(--apple-text);
       font-size: 12px;
       transition: all 0.2s ease;
     }
 
     input:focus, textarea:focus {
       outline: none;
-      border-color: var(--cyan);
-      box-shadow: 0 0 12px var(--cyan-glow);
+      border-color: var(--apple-blue);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25);
     }
 
-    /* Action Buttons */
+    /* Apple Minimalist Buttons */
     .btn {
       cursor: pointer;
       border: none;
-      border-radius: 8px;
+      border-radius: 9px;
       padding: 9px 12px;
       font-size: 12px;
       font-weight: 600;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -211,73 +186,55 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--cyan) 0%, #0099ff 100%);
-      color: #030712;
-      font-weight: 700;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+      background: var(--apple-blue);
+      color: #ffffff;
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, #33f3ff 0%, #1ab0ff 100%);
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
-      transform: translateY(-1px);
+      background: var(--apple-blue-hover);
+      box-shadow: 0 2px 10px rgba(10, 132, 255, 0.3);
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--apple-border);
+      color: var(--apple-text);
     }
 
     .btn-secondary:hover {
-      background: rgba(0, 240, 255, 0.1);
-      border-color: var(--cyan);
-      color: #ffffff;
-    }
-
-    .btn-jarvis {
-      background: linear-gradient(135deg, var(--violet) 0%, #6366f1 100%);
-      color: #ffffff;
-      font-weight: 700;
-      box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
-    }
-
-    .btn-jarvis:hover {
-      background: linear-gradient(135deg, #a78bfa 0%, #4f46e5 100%);
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
-      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.14);
+      border-color: var(--apple-border-focus);
     }
 
     .btn-danger {
       background: transparent;
-      color: var(--red);
+      color: var(--apple-red);
       font-size: 11px;
       padding: 4px 8px;
-      border: 1px solid rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(255, 69, 58, 0.2);
     }
 
     .btn-danger:hover {
-      background: rgba(239, 68, 68, 0.1);
+      background: rgba(255, 69, 58, 0.1);
     }
 
-    /* JARVIS Research UI Cards */
-    .trust-gauge-box {
-      background: rgba(0, 240, 255, 0.03);
-      border: 1px solid var(--border-hud);
-      border-radius: 10px;
-      padding: 10px;
+    /* Intelligence Minimalist Cards */
+    .score-card {
+      background: var(--apple-card-inner);
+      border: 1px solid var(--apple-border);
+      border-radius: 11px;
+      padding: 12px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
-    .score-circle {
-      width: 54px;
-      height: 54px;
+    .score-ring {
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,240,255,0.1) 0%, transparent 70%);
-      border: 2px solid var(--cyan);
-      box-shadow: 0 0 12px var(--cyan-glow);
+      background: rgba(10, 132, 255, 0.08);
+      border: 2.5px solid var(--apple-blue);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -285,143 +242,143 @@
       flex-shrink: 0;
     }
 
-    .score-num {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--cyan);
+    .score-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
       line-height: 1;
     }
 
-    .score-label {
+    .score-sub {
       font-size: 8px;
-      font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: 0.05em;
+      font-weight: 600;
+      color: var(--apple-subtext);
+      text-transform: uppercase;
+      margin-top: 1px;
     }
 
-    .trust-details {
+    .score-info {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
       flex: 1;
     }
 
-    .trust-title {
-      font-size: 12px;
-      font-weight: 700;
+    .score-headline {
+      font-size: 13px;
+      font-weight: 600;
       color: #ffffff;
+    }
+
+    .score-desc {
+      font-size: 10px;
+      color: var(--apple-subtext);
+      line-height: 1.35;
+    }
+
+    .section-box {
+      background: var(--apple-card-inner);
+      border: 1px solid var(--apple-border);
+      border-radius: 11px;
+      padding: 11px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--apple-subtext);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
       gap: 5px;
     }
 
-    .trust-bar-bg {
-      width: 100%;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 2px;
+    .section-content {
+      font-size: 11.5px;
+      color: var(--apple-text);
+      line-height: 1.45;
     }
 
-    .trust-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--cyan), var(--green));
-      width: 95%;
-      border-radius: 2px;
-      box-shadow: 0 0 8px var(--cyan);
-    }
-
-    .intel-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .intel-box {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 8px;
-      padding: 8px;
-    }
-
-    .intel-box-title {
-      font-size: 9px;
-      color: var(--text-muted);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .intel-box-val {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-main);
-      margin-top: 2px;
-    }
-
-    .tag-badge {
+    .skill-tag {
       display: inline-block;
       font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(0, 240, 255, 0.1);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      color: var(--cyan);
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--apple-border);
+      color: var(--apple-secondary);
       margin-right: 4px;
       margin-bottom: 4px;
     }
 
-    .flag-list {
+    .resource-list {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      font-size: 11px;
-    }
-
-    .flag-item {
-      display: flex;
-      align-items: flex-start;
       gap: 6px;
-      color: var(--text-main);
-      line-height: 1.3;
+      margin-top: 4px;
     }
 
-    .flag-item.green { color: #a7f3d0; }
-    .flag-item.red { color: #fecaca; }
-
-    /* Scan animation overlay */
-    .scan-overlay {
-      position: relative;
-      overflow: hidden;
+    .resource-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--apple-border);
+      border-radius: 7px;
+      color: var(--apple-text);
+      text-decoration: none;
+      transition: all 0.15s ease;
     }
 
-    .scan-line {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-      box-shadow: 0 0 10px var(--cyan);
-      animation: scan-anim 1.5s infinite linear;
+    .resource-item:hover {
+      background: rgba(10, 132, 255, 0.1);
+      border-color: rgba(10, 132, 255, 0.3);
+      color: var(--apple-blue-hover);
     }
 
-    @keyframes scan-anim {
-      0% { top: 0; opacity: 1; }
-      100% { top: 100%; opacity: 0.2; }
+    .resource-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .resource-badge {
+      font-size: 9px;
+      color: var(--apple-subtext);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .loading-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--apple-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 12px auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     .status-text {
       font-size: 11px;
       text-align: center;
       padding: 6px;
-      border-radius: 6px;
+      border-radius: 8px;
     }
 
-    .status-info { background: rgba(0, 240, 255, 0.08); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.2); }
-    .status-success { background: rgba(16, 185, 129, 0.08); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.2); }
-    .status-error { background: rgba(239, 68, 68, 0.08); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2); }
+    .status-info { background: rgba(10, 132, 255, 0.1); color: var(--apple-blue); border: 1px solid rgba(10, 132, 255, 0.2); }
+    .status-success { background: rgba(48, 209, 88, 0.1); color: var(--apple-green); border: 1px solid rgba(48, 209, 88, 0.2); }
+    .status-error { background: rgba(255, 69, 58, 0.1); color: var(--apple-red); border: 1px solid rgba(255, 69, 58, 0.2); }
 
     .hidden { display: none !important; }
   </style>
@@ -429,57 +386,57 @@
 <body>
   <div class="container">
 
-    <!-- Top JARVIS HUD Header -->
-    <div class="hud-header">
-      <div class="brand-box">
-        <div class="arc-reactor"></div>
-        <span class="logo-text">DearHR</span>
+    <!-- Minimal Header -->
+    <div class="apple-header">
+      <div class="brand-group">
+        <div class="brand-icon">D</div>
+        <span class="brand-name">DearHR</span>
       </div>
-      <span class="hud-tag">JARVIS AI v2.4</span>
+      <span class="header-badge">Intelligence</span>
     </div>
 
-    <!-- Navigation Switcher -->
-    <div id="nav-bar" class="nav-tabs hidden">
-      <button id="nav-capture-btn" class="nav-tab active">
-        💼 JD Capture
+    <!-- Segmented Tab Control -->
+    <div id="nav-bar" class="segmented-control hidden">
+      <button id="nav-capture-btn" class="segmented-tab active">
+        💼 Capture
       </button>
-      <button id="nav-research-btn" class="nav-tab">
-        🤖 JARVIS Intel
+      <button id="nav-intel-btn" class="segmented-tab">
+        ✨ Intelligence
       </button>
     </div>
 
-    <!-- Auth Screen -->
-    <div id="auth-screen" class="glass-panel">
-      <label>Authenticate Connection</label>
-      <input type="password" id="token-input" placeholder="Paste your API JWT token here...">
-      <p style="font-size: 10px; color: var(--text-muted); margin: 0; line-height: 1.4;">
-        Get your authorization token from profile settings in the DearHR web portal.
+    <!-- Auth View -->
+    <div id="auth-screen" class="apple-panel">
+      <label>Connect to DearHR</label>
+      <input type="password" id="token-input" placeholder="Paste authentication token...">
+      <p style="font-size: 10px; color: var(--apple-subtext); margin: 0; line-height: 1.4;">
+        Find your access token in DearHR Profile Settings.
       </p>
-      <button id="save-token-btn" class="btn btn-primary">⚡ Connect Extension</button>
+      <button id="save-token-btn" class="btn btn-primary">Connect Account</button>
     </div>
 
-    <!-- Main Screens Container -->
+    <!-- Main Views Container -->
     <div id="main-container" class="hidden">
 
       <!-- VIEW 1: JD Capture -->
-      <div id="view-capture" class="glass-panel">
+      <div id="view-capture" class="apple-panel">
         <div>
-          <label>Company Name</label>
-          <input type="text" id="company-input" placeholder="e.g. Google">
+          <label>Company</label>
+          <input type="text" id="company-input" placeholder="e.g. Apple">
         </div>
 
         <div>
           <label>Job Title</label>
-          <input type="text" id="title-input" placeholder="e.g. Senior Software Engineer">
+          <input type="text" id="title-input" placeholder="e.g. Senior iOS Engineer">
         </div>
 
         <div>
-          <label>Job Description Text</label>
-          <textarea id="jd-textarea" rows="5" placeholder="Auto-extracting content from page..."></textarea>
+          <label>Job Description</label>
+          <textarea id="jd-textarea" rows="5" placeholder="Extracting content from webpage..."></textarea>
         </div>
 
         <button id="extract-btn" class="btn btn-secondary">
-          ✨ Auto-Extract Webpage JD
+          ✨ Auto-Extract Webpage
         </button>
 
         <div style="display: flex; gap: 8px; width: 100%;">
@@ -498,94 +455,81 @@
           </label>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; margin-top: 4px;">
-          <span id="connection-status" style="font-size: 10px; color: var(--green); display: flex; align-items: center; gap: 4px;">
-            ● Connected to DearHR
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--apple-border); padding-top: 8px; margin-top: 2px;">
+          <span id="connection-status" style="font-size: 10px; color: var(--apple-green); display: flex; align-items: center; gap: 4px;">
+            ● Connected
           </span>
           <button id="logout-btn" class="btn btn-danger">Disconnect</button>
         </div>
       </div>
 
-      <!-- VIEW 2: JARVIS Research Intelligence -->
-      <div id="view-research" class="glass-panel hidden">
+      <!-- VIEW 2: Intelligence & Research -->
+      <div id="view-intel" class="apple-panel hidden">
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 11px; font-weight: 700; color: var(--cyan); letter-spacing: 0.05em;">
-            JARVIS SEARCH & TRUST PROTOCOL
+          <span style="font-size: 11px; font-weight: 600; color: var(--apple-text);">
+            Job Analysis & Global Research
           </span>
-          <button id="run-research-btn" class="btn btn-jarvis" style="padding: 5px 10px; font-size: 10px;">
-            ⚡ Re-Scan Intelligence
+          <button id="run-intel-btn" class="btn btn-secondary" style="padding: 4px 8px; font-size: 10px;">
+            ⚡ Re-Scan
           </button>
         </div>
 
-        <!-- Scan loading state -->
-        <div id="research-loading" class="scan-overlay hidden" style="padding: 24px 10px; text-align: center;">
-          <div class="scan-line"></div>
-          <div style="font-size: 12px; font-weight: 700; color: var(--cyan);">Running JARVIS Deep Intelligence Scan...</div>
-          <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Verifying publisher footprint, web search index & fraud risk...</div>
+        <!-- Loading State -->
+        <div id="intel-loading" class="hidden" style="text-align: center; padding: 20px 0;">
+          <div class="loading-spinner"></div>
+          <div style="font-size: 11px; font-weight: 500; color: var(--apple-text);">Scanning Job Worth & Global Intel...</div>
+          <div style="font-size: 10px; color: var(--apple-subtext); margin-top: 3px;">Analyzing publisher footprint & market sources</div>
         </div>
 
-        <!-- Research Content Container -->
-        <div id="research-content" class="container" style="gap: 10px;">
+        <!-- Intelligence Content -->
+        <div id="intel-content" class="container" style="gap: 10px;">
 
-          <!-- Trust Score Box -->
-          <div class="trust-gauge-box">
-            <div class="score-circle">
-              <span class="score-num" id="res-trust-score">96%</span>
-              <span class="score-label">TRUST</span>
+          <!-- 1. Is this job worth it & Match Possibility -->
+          <div class="score-card">
+            <div class="score-ring">
+              <span class="score-val" id="res-match-score">88%</span>
+              <span class="score-sub">Match</span>
             </div>
-            <div class="trust-details">
-              <div class="trust-title">
-                <span id="res-trust-status">🛡️ VERIFIED EMPLOYER</span>
-              </div>
-              <div style="font-size: 10px; color: var(--text-muted);" id="res-trust-sub">
-                High Credibility • Low Risk • Verified Web Footprint
-              </div>
-              <div class="trust-bar-bg">
-                <div class="trust-bar-fill" id="res-trust-bar" style="width: 96%;"></div>
+            <div class="score-info">
+              <div class="score-headline" id="res-worth-title">High Opportunity Role</div>
+              <div class="score-desc" id="res-worth-desc">
+                Strong skill alignment, verified corporate employer, clear career growth potential.
               </div>
             </div>
           </div>
 
-          <!-- Who Posted That (Publisher Breakdown) -->
-          <div class="intel-box">
-            <div class="intel-box-title">👤 Who Posted That (Publisher Intel)</div>
-            <div class="intel-box-val" id="res-poster-info">Direct HR / Talent Acquisition Team</div>
-            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;" id="res-domain-info">
-              Domain: linkedin.com (SSL Encrypted • Official Platform Listing)
+          <!-- 2. Who Posted That Job (Publisher & Company Info) -->
+          <div class="section-box">
+            <div class="section-title">👤 Who Posted That Job</div>
+            <div style="font-weight: 600; font-size: 12px; color: #ffffff;" id="res-poster-name">
+              Talent Acquisition Team
+            </div>
+            <div style="font-size: 10px; color: var(--apple-subtext); margin-top: 2px;" id="res-company-info">
+              Company Footprint: Verified Employer Listing
             </div>
           </div>
 
-          <!-- Web Search & Role Intelligence Summary -->
-          <div class="intel-box">
-            <div class="intel-box-title">🌐 Web Search & Market Summary</div>
-            <div style="font-size: 11px; color: var(--text-main); margin-top: 4px; line-height: 1.4;" id="res-summary-text">
-              Authentic job post targeting experienced tech professionals. Core focus on system architecture, API scalability, and cross-functional team collaboration.
+          <!-- 3. Global Search & Market Summary -->
+          <div class="section-box">
+            <div class="section-title">🌐 Global Search Summary</div>
+            <div class="section-content" id="res-summary-text">
+              Comprehensive role overview synthesized from global web indices and hiring platform listings.
             </div>
-            <div style="margin-top: 6px;" id="res-skill-tags">
-              <span class="tag-badge">React</span>
-              <span class="tag-badge">Node.js</span>
-              <span class="tag-badge">TypeScript</span>
+            <div style="margin-top: 8px;" id="res-skill-tags">
+              <!-- Skill badges -->
             </div>
           </div>
 
-          <!-- Integrity & Risk Radar -->
-          <div class="intel-box">
-            <div class="intel-box-title">⚡ Integrity Radar Checks</div>
-            <div class="flag-list" style="margin-top: 4px;">
-              <div class="flag-item green">
-                <span>✓</span> <span id="flag-1">Verified Corporate Domain & HTTPS portal</span>
-              </div>
-              <div class="flag-item green">
-                <span>✓</span> <span id="flag-2">Standard hiring workflow (Zero fee/wire transfer suspicion)</span>
-              </div>
-              <div class="flag-item green">
-                <span>✓</span> <span id="flag-3">Realistic compensation & clear skill requirements</span>
-              </div>
+          <!-- 4. Referenced Intelligence Resources -->
+          <div class="section-box">
+            <div class="section-title">🔗 Referenced Resources & Sources</div>
+            <div class="resource-list" id="res-resource-list">
+              <!-- Dynamic Resource Links -->
             </div>
           </div>
 
-          <!-- Action Buttons for Research -->
+          <!-- Actions -->
           <div style="display: flex; gap: 8px; margin-top: 2px;">
             <button id="res-cart-btn" class="btn btn-secondary" style="flex: 1; font-size: 11px;">
               📥 Save to Cart

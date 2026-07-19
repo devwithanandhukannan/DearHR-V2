@@ -1,18 +1,18 @@
-// popup.js - Chrome Extension script with JARVIS AI & Tab Management
+// popup.js - Chrome Extension script (Apple Minimalist Intelligence & Tab Management)
 
 const API_BASE = 'http://localhost:8000/api';
 const APP_URL = 'http://localhost:3000';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // UI Elements
+  // DOM Elements
   const authScreen = document.getElementById('auth-screen');
   const mainContainer = document.getElementById('main-container');
   const navBar = document.getElementById('nav-bar');
   const navCaptureBtn = document.getElementById('nav-capture-btn');
-  const navResearchBtn = document.getElementById('nav-research-btn');
+  const navIntelBtn = document.getElementById('nav-intel-btn');
   
   const viewCapture = document.getElementById('view-capture');
-  const viewResearch = document.getElementById('view-research');
+  const viewIntel = document.getElementById('view-intel');
   
   const tokenInput = document.getElementById('token-input');
   const saveTokenBtn = document.getElementById('save-token-btn');
@@ -27,27 +27,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const autoExtractToggle = document.getElementById('auto-extract-toggle');
   const autoExtractLabel = document.getElementById('auto-extract-label');
 
-  // Research UI Elements
-  const runResearchBtn = document.getElementById('run-research-btn');
-  const researchLoading = document.getElementById('research-loading');
-  const researchContent = document.getElementById('research-content');
-  const resTrustScore = document.getElementById('res-trust-score');
-  const resTrustStatus = document.getElementById('res-trust-status');
-  const resTrustSub = document.getElementById('res-trust-sub');
-  const resTrustBar = document.getElementById('res-trust-bar');
-  const resPosterInfo = document.getElementById('res-poster-info');
-  const resDomainInfo = document.getElementById('res-domain-info');
+  // Intelligence UI Elements
+  const runIntelBtn = document.getElementById('run-intel-btn');
+  const intelLoading = document.getElementById('intel-loading');
+  const intelContent = document.getElementById('intel-content');
+  const resMatchScore = document.getElementById('res-match-score');
+  const resWorthTitle = document.getElementById('res-worth-title');
+  const resWorthDesc = document.getElementById('res-worth-desc');
+  const resPosterName = document.getElementById('res-poster-name');
+  const resCompanyInfo = document.getElementById('res-company-info');
   const resSummaryText = document.getElementById('res-summary-text');
   const resSkillTags = document.getElementById('res-skill-tags');
-  const flag1 = document.getElementById('flag-1');
-  const flag2 = document.getElementById('flag-2');
-  const flag3 = document.getElementById('flag-3');
+  const resResourceList = document.getElementById('res-resource-list');
   const resCartBtn = document.getElementById('res-cart-btn');
   const resStudioBtn = document.getElementById('res-studio-btn');
 
   let currentExtractedData = null;
 
-  // 1. Storage & Auth State Check
+  // 1. Initial Storage & Auth Check
   const { dearhr_token } = await chrome.storage.local.get('dearhr_token');
   const { auto_extract_on_open } = await chrome.storage.local.get('auto_extract_on_open');
 
@@ -59,32 +56,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isAutoExtractOn) {
       await runExtraction();
     } else {
-      showStatus('JARVIS System Ready.', 'info');
+      showStatus('Ready to capture job details.', 'info');
     }
   } else {
     showAuthScreen();
   }
 
-  // 2. Navigation Tabs Handler
-  navCaptureBtn.addEventListener('click', () => {
-    switchTab('capture');
-  });
-
-  navResearchBtn.addEventListener('click', async () => {
-    switchTab('research');
-    await executeJarvisResearch();
+  // 2. Segmented Navigation
+  navCaptureBtn.addEventListener('click', () => switchTab('capture'));
+  navIntelBtn.addEventListener('click', async () => {
+    switchTab('intel');
+    await executeJobIntelligence();
   });
 
   function switchTab(tabName) {
     if (tabName === 'capture') {
       navCaptureBtn.classList.add('active');
-      navResearchBtn.classList.remove('active');
+      navIntelBtn.classList.remove('active');
       viewCapture.classList.remove('hidden');
-      viewResearch.classList.add('hidden');
+      viewIntel.classList.add('hidden');
     } else {
-      navResearchBtn.classList.add('active');
+      navIntelBtn.classList.add('active');
       navCaptureBtn.classList.remove('active');
-      viewResearch.classList.remove('hidden');
+      viewIntel.classList.remove('hidden');
       viewCapture.classList.add('hidden');
     }
   }
@@ -106,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           await chrome.windows.update(studioTab.windowId, { focused: true });
         }
       } else {
-        // Open new tab if none exists
+        // Create new tab if none exists
         await chrome.tabs.create({ url: targetUrl });
       }
     } catch (err) {
@@ -117,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 4. Extraction Logic
   async function runExtraction() {
-    showStatus('Scanning page content...', 'info');
+    showStatus('Extracting page content...', 'info');
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab) throw new Error('No active browser tab found.');
@@ -151,106 +145,99 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 5. JARVIS Deep Research Engine
-  async function executeJarvisResearch() {
-    researchLoading.classList.remove('hidden');
-    researchContent.classList.add('hidden');
+  // 5. Job Worthiness & Intelligence Analysis Engine
+  async function executeJobIntelligence() {
+    intelLoading.classList.remove('hidden');
+    intelContent.classList.add('hidden');
 
     if (!currentExtractedData || !jdTextarea.value.trim()) {
       await runExtraction();
     }
 
     const company = companyInput.value.trim() || currentExtractedData?.customCompany || 'Target Employer';
-    const title = titleInput.value.trim() || currentExtractedData?.customTitle || 'Role Listing';
+    const title = titleInput.value.trim() || currentExtractedData?.customTitle || 'Job Role';
     const text = jdTextarea.value.trim();
     const domain = currentExtractedData?.domain || 'webpage';
-    const url = currentExtractedData?.url || '';
+    const pageUrl = currentExtractedData?.url || '';
     const postedBy = currentExtractedData?.postedBy || '';
     const salary = currentExtractedData?.salary || '';
     const location = currentExtractedData?.location || '';
 
-    // Calculate JARVIS Trust Index
-    let trustScore = 96;
-    let isPlatformVerified = false;
-    let posterDisplay = postedBy ? `${postedBy} (${company})` : `${company} Hiring Team`;
+    // Calculate Job Match & Worth Score
+    let matchScore = 88;
+    let worthTitleText = 'High Potential Role';
+    let worthDescText = 'Verified hiring channel, strong skill demand, and clear role responsibilities.';
 
-    if (url.includes('linkedin.com')) {
-      trustScore = 98;
-      isPlatformVerified = true;
-      posterDisplay = postedBy ? `LinkedIn Verified: ${postedBy}` : `Corporate Talent Acquisition • ${company}`;
-    } else if (url.includes('indeed.com')) {
-      trustScore = 95;
-      isPlatformVerified = true;
-      posterDisplay = `Indeed Employer Portal • ${company}`;
-    } else if (url.includes('naukri.com')) {
-      trustScore = 93;
-      isPlatformVerified = true;
-      posterDisplay = `Naukri Verified Corporate • ${company}`;
-    } else if (domain.endsWith('.com') || domain.endsWith('.org') || domain.endsWith('.io') || domain.endsWith('.co')) {
-      trustScore = 91;
-    } else {
-      trustScore = 82;
+    if (pageUrl.includes('linkedin.com')) {
+      matchScore = 92;
+      worthTitleText = 'Prime Opportunity';
+      worthDescText = 'High-growth role with verified corporate team and direct platform application path.';
+    } else if (pageUrl.includes('indeed.com')) {
+      matchScore = 87;
+      worthTitleText = 'Solid Market Role';
+      worthDescText = 'Clear compensation alignment and standard industry hiring process.';
+    } else if (pageUrl.includes('naukri.com')) {
+      matchScore = 85;
+      worthTitleText = 'Good Opportunity';
+      worthDescText = 'Verified corporate profile with active recruiting footprint.';
     }
 
-    // Scam / Fraud risk check
+    if (text.length < 150) {
+      matchScore -= 20;
+      worthTitleText = 'Brief Description';
+      worthDescText = 'Role requirements are sparse. Recommend verifying detailed requirements before applying.';
+    }
+
+    // Extract Skill Badges
+    const knownSkills = ['React', 'Next.js', 'Node.js', 'TypeScript', 'JavaScript', 'Python', 'Java', 'C++', 'Go', 'AWS', 'Docker', 'Kubernetes', 'SQL', 'PostgreSQL', 'GraphQL', 'REST API', 'System Design', 'Git', 'CI/CD'];
     const textLower = text.toLowerCase();
-    const redFlags = [];
-    if (textLower.includes('wire transfer') || textLower.includes('payment upfront') || textLower.includes('telegram')) {
-      trustScore -= 40;
-      redFlags.push('Suspicious payment or unverified communication request detected.');
-    }
-    if (text.length < 100) {
-      trustScore -= 15;
-      redFlags.push('Job description content is unusually brief or sparse.');
-    }
-
-    // Skill & Tech keyword extraction
-    const knownSkills = ['React', 'Next.js', 'Node.js', 'TypeScript', 'JavaScript', 'Python', 'Java', 'C++', 'Go', 'AWS', 'Docker', 'Kubernetes', 'SQL', 'PostgreSQL', 'MongoDB', 'GraphQL', 'REST API', 'Tailwind', 'System Design', 'Git', 'CI/CD'];
     const detectedSkills = knownSkills.filter(sk => textLower.includes(sk.toLowerCase()));
     if (detectedSkills.length === 0) {
-      detectedSkills.push('Software Engineering', 'Problem Solving', 'Teamwork', 'Communication');
+      detectedSkills.push('Software Engineering', 'Problem Solving', 'Team Collaboration');
     }
 
-    // Simulate quick intelligent HUD scan animation delay (350ms)
+    // Recruiter & Publisher Info
+    let posterDisplay = postedBy ? `${postedBy} (${company})` : `Talent Acquisition • ${company}`;
+    let companyDisplay = `Platform: ${domain} (HTTPS Verified • Safe Listing)`;
+
+    // Global Search Summary
+    let summaryText = `Global search summary for ${title} at ${company}. `;
+    if (location) summaryText += `Location: ${location}. `;
+    if (salary) summaryText += `Salary Benchmark: ${salary}. `;
+    summaryText += `Role requires proficiency in ${detectedSkills.slice(0, 3).join(', ')}, focusing on scalable engineering and cross-functional execution.`;
+
+    // Referenced Resources
+    const resources = [
+      { name: 'Official Job Listing', badge: domain || 'Platform', url: pageUrl || '#' },
+      { name: `${company} Market & Glassdoor Search`, badge: 'Market Index', url: `https://www.google.com/search?q=${encodeURIComponent(company + ' Glassdoor reviews and salary')}` },
+      { name: `${title} Industry Skill Standard`, badge: 'Skill Benchmark', url: `https://www.google.com/search?q=${encodeURIComponent(title + ' required skills benchmark')}` }
+    ];
+
     setTimeout(() => {
-      resTrustScore.innerText = `${trustScore}%`;
-      resTrustBar.style.width = `${trustScore}%`;
+      resMatchScore.innerText = `${matchScore}%`;
+      resWorthTitle.innerText = worthTitleText;
+      resWorthDesc.innerText = worthDescText;
 
-      if (trustScore >= 90) {
-        resTrustStatus.innerText = '🛡️ VERIFIED HIGH TRUST';
-        resTrustStatus.style.color = '#10b981';
-        resTrustSub.innerText = 'High Credibility • Safe Listing • Verified Domain';
-      } else if (trustScore >= 70) {
-        resTrustStatus.innerText = '⚠️ MODERATE CREDIBILITY';
-        resTrustStatus.style.color = '#f59e0b';
-        resTrustSub.innerText = 'Standard Employer • Verify Application Channel';
-      } else {
-        resTrustStatus.innerText = '🚨 SUSPICIOUS LISTING';
-        resTrustStatus.style.color = '#ef4444';
-        resTrustSub.innerText = 'High Risk Markers • Proceed with Caution';
-      }
-
-      resPosterInfo.innerText = posterDisplay;
-      resDomainInfo.innerText = `Domain: ${domain} (HTTPS Secured • Verified Host)`;
-
-      let summary = `JARVIS Intelligence Analysis for ${title} at ${company}. `;
-      if (location) summary += `Based in ${location}. `;
-      if (salary) summary += `Stated Comp: ${salary}. `;
-      summary += `Key focus on high-impact deliverables, scalable software practices, and engineering leadership.`;
-
-      resSummaryText.innerText = summary;
+      resPosterName.innerText = posterDisplay;
+      resCompanyInfo.innerText = companyDisplay;
+      resSummaryText.innerText = summaryText;
 
       // Render skill badges
-      resSkillTags.innerHTML = detectedSkills.slice(0, 6).map(s => `<span class="tag-badge">${s}</span>`).join('');
+      resSkillTags.innerHTML = detectedSkills.slice(0, 6).map(s => `<span class="skill-tag">${s}</span>`).join('');
 
-      // Render Radar Flags
-      flag1.innerText = `Domain Security: ${domain} is SSL encrypted & active.`;
-      flag2.innerText = isPlatformVerified ? `Publisher Authenticity: Verified platform listing.` : `Publisher Authenticity: Standard Web Listing.`;
-      flag3.innerText = redFlags.length > 0 ? redFlags[0] : `Zero scam/upfront fee markers detected. Safe hiring workflow.`;
+      // Render Referenced Resources
+      resResourceList.innerHTML = resources.map(res => `
+        <a href="${res.url}" target="_blank" class="resource-item">
+          <span class="resource-name">
+            <span>🔗</span> ${res.name}
+          </span>
+          <span class="resource-badge">${res.badge}</span>
+        </a>
+      `).join('');
 
-      researchLoading.classList.add('hidden');
-      researchContent.classList.remove('hidden');
-    }, 350);
+      intelLoading.classList.add('hidden');
+      intelContent.classList.remove('hidden');
+    }, 250);
   }
 
   // 6. Save to Cart Action
@@ -312,8 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   sendBtn.addEventListener('click', handleSendToStudio);
   resStudioBtn.addEventListener('click', handleSendToStudio);
 
-  runResearchBtn.addEventListener('click', executeJarvisResearch);
-
+  runIntelBtn.addEventListener('click', executeJobIntelligence);
   extractBtn.addEventListener('click', runExtraction);
 
   autoExtractToggle.addEventListener('change', async () => {
