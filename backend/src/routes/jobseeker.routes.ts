@@ -34,12 +34,25 @@ import {
   scoreContentOnly,
   getInlineSuggestions,
   improveSelectedText,
+  injectKeywordsForVersion,
+  getMockInterviewQuestions,
+  evaluateInterviewAnswerForVersion,
+  generateOutreachMessageForVersion,
+  getSalaryInsightsForVersion,
 } from '../controllers/resume.controller.ts';
+import { 
+  getApplications,
+  createApplication,
+  updateApplication,
+  deleteApplication
+} from '../controllers/application.controller.ts';
 import { saveNotificationToken } from '../controllers/notification.controller.ts';
 import { parseAndLoadResume } from '../controllers/resumeParser.controller.ts';
 import {
   saveJobDescription,
   getJobDescription,
+  getJobDescriptions,
+  deleteJobDescription,
   getResumeVersions,
   getResumeVersionById,
   createResumeVersion,
@@ -134,7 +147,9 @@ router.post('/resumes/:id/send-email', sendEmailWithCV as any);
 
 // ─── EXTENSION & JOB DESCRIPTIONS ───────────────────────────────────────
 router.post('/job-descriptions', saveJobDescription as any);
+router.get('/job-descriptions', getJobDescriptions as any);
 router.get('/job-descriptions/:id', getJobDescription as any);
+router.delete('/job-descriptions/:id', deleteJobDescription as any);
 
 // ─── RESUME VERSION MANAGER & COVER LETTERS ──────────────────────────────
 router.get('/resumes/:id/versions', getResumeVersions as any);
@@ -144,6 +159,19 @@ router.delete('/resumes/versions/:versionId', deleteResumeVersion as any);
 router.post('/resumes/versions/:versionId/duplicate', duplicateResumeVersion as any);
 router.post('/resumes/versions/:versionId/cover-letter', generateCoverLetterForVersion as any);
 router.put('/resumes/versions/:versionId/cover-letter', updateCoverLetter as any);
+
+// ─── KANBAN BOARD APPLICATIONS ──────────────────────────────────────────
+router.get('/applications', getApplications);
+router.post('/applications', createApplication);
+router.put('/applications/:id', updateApplication);
+router.delete('/applications/:id', deleteApplication);
+
+// ─── TAILORED VERSION AI COMPANION HELPERS ───────────────────────────────
+router.post('/resumes/versions/:versionId/inject-keywords', injectKeywordsForVersion);
+router.get('/resumes/versions/:versionId/interview-questions', getMockInterviewQuestions);
+router.post('/resumes/versions/interview-feedback', evaluateInterviewAnswerForVersion);
+router.post('/resumes/versions/:versionId/outreach', generateOutreachMessageForVersion);
+router.get('/resumes/versions/:versionId/salary-insights', getSalaryInsightsForVersion);
 
 router.post('/notification/token', saveNotificationToken);
 

@@ -130,6 +130,7 @@ export const checkMe = async (req: Request, res: Response) => {
 
     return res.status(200).json({ 
       success: true,
+      accessToken: req.token,
       user: {
         id: user.id,
         mobileNumber: user.mobileNumber || '',

@@ -44,10 +44,16 @@ api.interceptors.response.use(
         );
         const newToken = refreshResponse.data.accessToken;
         setAccessToken(newToken);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', newToken);
+        }
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         setAccessToken('');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+        }
         return Promise.reject(refreshError);
       }
     }

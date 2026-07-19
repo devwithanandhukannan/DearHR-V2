@@ -91,6 +91,7 @@ model JobSeekerProfile {
   languages             Language[]
   achievements          Achievement[]
   jobDescriptions       JobDescription[]
+  applications          JobApplication[]
 
   @@index([email])
   @@index([userId])
@@ -241,6 +242,7 @@ model ResumeVersion {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   coverLetter CoverLetter?
+  application JobApplication?
 
   @@index([resumeId])
 }
@@ -253,4 +255,22 @@ model CoverLetter {
   body            String        @db.Text
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+model JobApplication {
+  id                 String           @id @default(uuid())
+  jobSeekerProfileId String
+  jobSeekerProfile   JobSeekerProfile @relation(fields: [jobSeekerProfileId], references: [id], onDelete: Cascade)
+  resumeVersionId    String?          @unique
+  resumeVersion      ResumeVersion?   @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+  title              String
+  company            String
+  descriptionText    String?          @db.Text
+  status             String           @default("wishlist") // wishlist, applied, interviewing, offers, archive
+  appliedAt          DateTime?
+  notes              String?          @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([jobSeekerProfileId])
 }

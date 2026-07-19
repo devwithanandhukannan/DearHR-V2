@@ -15,18 +15,85 @@ document.addEventListener('DOMContentLoaded', async () => {
   const sendBtn = document.getElementById('send-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const statusMessage = document.getElementById('status-message');
+  const autoExtractToggle = document.getElementById('auto-extract-toggle');
+  const autoExtractLabel = document.getElementById('auto-extract-label');
+  const addCartBtn = document.getElementById('add-cart-btn');
 
   // 1. Initial State Check
   const { dearhr_token } = await chrome.storage.local.get('dearhr_token');
+  const { auto_extract_on_open } = await chrome.storage.local.get('auto_extract_on_open');
+
+  const isAutoExtractOn = auto_extract_on_open !== false;
+  autoExtractToggle.checked = isAutoExtractOn;
+
   if (dearhr_token) {
     showMainScreen();
-    // Auto-extract on open for better UX
-    await runExtraction();
+    // Auto-extract on open if toggled on
+    if (isAutoExtractOn) {
+      await runExtraction();
+    } else {
+      showStatus('Ready. Click Auto-Extract or paste content manually.', 'info');
+    }
   } else {
     showAuthScreen();
   }
 
   // 2. Event Listeners
+  addCartBtn.addEventListener('click', async () => {
+    const company = companyInput.value.trim();
+    const title = titleInput.value.trim();
+    const descriptionText = jdTextarea.value.trim();
+
+    if (!descriptionText) {
+      showStatus('Job description text is required.', 'error');
+      return;
+    }
+
+    showStatus('Saving to cart...', 'info');
+    addCartBtn.disabled = true;
+
+    try {
+      const { dearhr_token } = await chrome.storage.local.get('dearhr_token');
+      if (!dearhr_token) {
+        showStatus('Connect extension in popup first.', 'error');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/jobseeker/job-descriptions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${dearhr_token}`
+        },
+        body: JSON.stringify({
+          company,
+          title,
+          descriptionText
+        })
+      });
+
+      const resData = await response.json();
+      if (response.ok && resData.success) {
+        showStatus('Saved to cart successfully!', 'success');
+      } else {
+        throw new Error(resData.error || resData.message || 'Failed to save job description.');
+      }
+    } catch (err) {
+      showStatus(err.message || 'Network error occurred.', 'error');
+    } finally {
+      addCartBtn.disabled = false;
+    }
+  });
+
+  autoExtractToggle.addEventListener('change', async () => {
+    await chrome.storage.local.set({ auto_extract_on_open: autoExtractToggle.checked });
+  });
+
+  autoExtractLabel.addEventListener('click', () => {
+    autoExtractToggle.checked = !autoExtractToggle.checked;
+    autoExtractToggle.dispatchEvent(new Event('change'));
+  });
+
   saveTokenBtn.addEventListener('click', async () => {
     const token = tokenInput.value.trim();
     if (!token) {
@@ -36,7 +103,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.storage.local.set({ dearhr_token: token });
     tokenInput.value = '';
     showMainScreen();
-    await runExtraction();
+    if (autoExtractToggle.checked) {
+      await runExtraction();
+    }
   });
 
   extractBtn.addEventListener('click', async () => {
@@ -79,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Open web app with JD ID query param
         chrome.tabs.create({ url: `${APP_URL}/dashboard/resumes?jd_id=${jdId}` });
       } else {
-        throw new Error(resData.error || 'Failed to save job description.');
+        throw new Error(resData.error || resData.message || 'Failed to save job description.');
       }
     } catch (err) {
       showStatus(err.message || 'Network error occurred.', 'error');
@@ -127,13 +196,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (results && results[0] && results[0].result) {
-        const { text, title } = results[0].result;
+        const { text, title, customTitle, customCompany } = results[0].result;
         jdTextarea.value = text || '';
         
-        // Parse Title & Company heuristics
-        const details = parseJobDetails(title || tab.title || '');
-        companyInput.value = details.company;
-        titleInput.value = details.jobTitle;
+        if (customTitle || customCompany) {
+          companyInput.value = customCompany || '';
+          titleInput.value = customTitle || '';
+        } else {
+          // Parse Title & Company heuristics
+          const details = parseJobDetails(title || tab.title || '');
+          companyInput.value = details.company;
+          titleInput.value = details.jobTitle;
+        }
         
         showStatus('Extracted successfully!', 'success');
       } else {

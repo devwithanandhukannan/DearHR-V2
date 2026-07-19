@@ -5,7 +5,18 @@ import fs from 'fs';
 import htmlPdf from 'html-pdf-node';
 import { prisma } from '../utils/prisma.ts';
 import { extractText } from '../utils/textExtractor.ts';
-import { analyzeResume, generateFreshCV, convertToHTML, optimizeForJD, suggestKeywords } from '../services/groq.service.ts';
+import { 
+  analyzeResume, 
+  generateFreshCV, 
+  convertToHTML, 
+  optimizeForJD, 
+  suggestKeywords,
+  contextualInjectKeywords,
+  generateInterviewQuestions,
+  evaluateInterviewAnswer,
+  generateColdOutreach,
+  generateSalaryNegotiation
+} from '../services/groq.service.ts';
 import { scoreResumeContent, generateInlineSuggestions, processTextSelection, generateRegionalResumeTemplate } from '../services/groq.service.ts';
 
 const getProfileId = async (userId: string) => {
@@ -417,7 +428,14 @@ export const optimizeResume = async (req: Request, res: Response) => {
     if (!resume) return res.status(404).json({ success: false, message: 'Resume not found' });
 
     const contentData = readContent(resume);
-    if (!contentData.htmlContent) return res.status(422).json({ success: false, message: 'Open resume in editor first to generate HTML' });
+    if (!contentData.htmlContent) {
+      if (contentData.parsedData) {
+        console.log('🔄 optimizeResume: htmlContent is empty. Generating HTML inline from parsedData...');
+        contentData.htmlContent = await convertToHTML(contentData.parsedData);
+      } else {
+        return res.status(422).json({ success: false, message: 'Open resume in editor first to generate HTML' });
+      }
+    }
 
     const result = await optimizeForJD(contentData.htmlContent, jobDescription);
 
@@ -742,5 +760,163 @@ export const generateRegionalCV = async (req: Request, res: Response) => {
   } catch (err) {
     console.error('generateRegionalCV error:', err);
     return res.status(500).json({ success: false, message: 'Regional CV generation failed' });
+  }
+};
+
+export const injectKeywordsForVersion = async (req: Request, res: Response) => {
+  try {
+    const versionId = req.params.versionId as string;
+    const userId = req.user!.userId;
+    const { keywords } = req.body;
+
+    if (!keywords || !Array.isArray(keywords)) {
+      return res.status(400).json({ success: false, message: 'Keywords array required' });
+    }
+
+    const profileId = await getProfileId(userId);
+    if (!profileId) return res.status(404).json({ success: false, message: 'Profile not found' });
+
+    const version = await prisma.resumeVersion.findFirst({
+      where: { id: versionId, resume: { jobSeekerProfileId: profileId } }
+    });
+    if (!version) return res.status(404).json({ success: false, message: 'Resume version not found' });
+
+    const contentData = (version.content as any) ?? {};
+    if (!contentData.htmlContent) {
+      return res.status(422).json({ success: false, message: 'No HTML content to inject keywords into' });
+    }
+
+    const result = await contextualInjectKeywords(contentData.htmlContent, keywords);
+
+    contentData.htmlContent = result.htmlContent;
+    contentData.notes = result.notes || contentData.notes;
+    
+    // Update matched and missing lists
+    if (contentData.missingKeywords) {
+      contentData.missingKeywords = contentData.missingKeywords.filter((k: string) => !keywords.includes(k));
+    }
+    if (contentData.matchedKeywords) {
+      contentData.matchedKeywords = Array.from(new Set([...contentData.matchedKeywords, ...keywords]));
+    }
+
+    const updated = await prisma.resumeVersion.update({
+      where: { id: versionId },
+      data: {
+        content: contentData,
+        atsScore: result.scores?.ats ?? version.atsScore,
+      }
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        htmlContent: result.htmlContent,
+        atsScore: result.scores?.ats ?? version.atsScore,
+        notes: result.notes,
+        content: contentData
+      }
+    });
+  } catch (err) {
+    console.error('injectKeywordsForVersion error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to inject keywords' });
+  }
+};
+
+export const getMockInterviewQuestions = async (req: Request, res: Response) => {
+  try {
+    const versionId = req.params.versionId as string;
+    const userId = req.user!.userId;
+
+    const profileId = await getProfileId(userId);
+    if (!profileId) return res.status(404).json({ success: false, message: 'Profile not found' });
+
+    const version = await prisma.resumeVersion.findFirst({
+      where: { id: versionId, resume: { jobSeekerProfileId: profileId } }
+    });
+    if (!version) return res.status(404).json({ success: false, message: 'Resume version not found' });
+
+    const contentData = (version.content as any) ?? {};
+    const htmlContent = contentData.htmlContent || '';
+    const jobDescription = contentData.jobDescription || 'Technical Role';
+
+    const result = await generateInterviewQuestions(htmlContent, jobDescription);
+    return res.json({ success: true, data: result.questions });
+  } catch (err) {
+    console.error('getMockInterviewQuestions error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to generate interview questions' });
+  }
+};
+
+export const evaluateInterviewAnswerForVersion = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { question, answer } = req.body;
+
+    if (!question || !answer) {
+      return res.status(400).json({ success: false, message: 'Question and Answer are required' });
+    }
+
+    const profileId = await getProfileId(userId);
+    if (!profileId) return res.status(404).json({ success: false, message: 'Profile not found' });
+
+    const result = await evaluateInterviewAnswer(question, answer);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('evaluateInterviewAnswerForVersion error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to evaluate mock answer' });
+  }
+};
+
+export const generateOutreachMessageForVersion = async (req: Request, res: Response) => {
+  try {
+    const versionId = req.params.versionId as string;
+    const userId = req.user!.userId;
+    const { type, recipientTitle } = req.body;
+
+    if (!type || !recipientTitle) {
+      return res.status(400).json({ success: false, message: 'Type and Recipient Title are required' });
+    }
+
+    const profileId = await getProfileId(userId);
+    if (!profileId) return res.status(404).json({ success: false, message: 'Profile not found' });
+
+    const version = await prisma.resumeVersion.findFirst({
+      where: { id: versionId, resume: { jobSeekerProfileId: profileId } }
+    });
+    if (!version) return res.status(404).json({ success: false, message: 'Resume version not found' });
+
+    const contentData = (version.content as any) ?? {};
+    const htmlContent = contentData.htmlContent || '';
+    const jobDescription = contentData.jobDescription || 'Job posting description details';
+
+    const result = await generateColdOutreach(type, htmlContent, jobDescription, recipientTitle);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('generateOutreachMessageForVersion error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to generate outreach message' });
+  }
+};
+
+export const getSalaryInsightsForVersion = async (req: Request, res: Response) => {
+  try {
+    const versionId = req.params.versionId as string;
+    const userId = req.user!.userId;
+
+    const profileId = await getProfileId(userId);
+    if (!profileId) return res.status(404).json({ success: false, message: 'Profile not found' });
+
+    const version = await prisma.resumeVersion.findFirst({
+      where: { id: versionId, resume: { jobSeekerProfileId: profileId } }
+    });
+    if (!version) return res.status(404).json({ success: false, message: 'Resume version not found' });
+
+    const contentData = (version.content as any) ?? {};
+    const jobDescription = contentData.jobDescription || 'Technical Role';
+
+    const result = await generateSalaryNegotiation(jobDescription);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('getSalaryInsightsForVersion error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch salary insights' });
   }
 };

@@ -17,6 +17,7 @@ const extractToken = (req: Request): string | undefined => {
 declare global {
   namespace Express {
     interface Request {
+      token?: string;
       user?: {
         userId: string;
         globalRoles: number;
@@ -31,12 +32,17 @@ declare global {
 
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   const token = extractToken(req);
+  console.log('🔒 authenticateToken: Authorization Header =', req.headers['authorization']);
+  console.log('🔒 authenticateToken: Extracted Token =', token ? `${token.substring(0, 15)}...` : 'undefined');
+
   if (!token) {
+    console.log('🔒 authenticateToken: No token found. Returning 401.');
     return res.status(401).json({ success: false, message: 'Session unauthorized or expired' });
   }
 
   try {
     const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as { userId: string; globalRoles: number };
+    console.log('🔒 authenticateToken: Decoded user ID =', decoded.userId);
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -50,9 +56,11 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     });
 
     if (!user || !user.isVerified) {
+      console.log('🔒 authenticateToken: User not found or not verified in DB. Returning 401.');
       return res.status(401).json({ success: false, message: 'User not found or not verified' });
     }
 
+    req.token = token;
     req.user = {
       userId: user.id,
       globalRoles: user.globalRoles,
@@ -60,8 +68,10 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       email: user.jobSeekerProfile?.email || undefined
     };
 
+    console.log('🔒 authenticateToken: Authentication successful for user =', user.id);
     return next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error('🔒 authenticateToken: JWT verification or DB error:', error.message);
     return res.status(401).json({ success: false, message: 'Invalid or expired session token' });
   }
 };

@@ -1,20 +1,20 @@
 // PATH: src/app/dashboard/resumes/page.tsx
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   FileText, Upload, Sparkles, X, AlertCircle, CheckCircle2,
   Target, Lightbulb, KeyRound, BarChart3, ArrowUpRight, Loader2,
   Trash2, TrendingUp, Edit3, Star, ChevronDown, Zap, Info, Flame, Award, Mail,
-  Layers, Copy, Plus
+  Layers, Copy, Plus, Briefcase
 } from 'lucide-react';
 import {
   getAllResumes, uploadResume, generateCV, deleteResume, optimizeForJD,
   type ResumeListItem, type ResumeScores,
   getJobDescription, getResumeVersions, createResumeVersion, deleteResumeVersion,
   duplicateResumeVersion, generateCoverLetterForVersion, updateCoverLetter,
-  type ResumeVersionItem
+  type ResumeVersionItem, getJobDescriptions, deleteJobDescription, type JobDescriptionItem
 } from '@/app/lib/resumeApi';
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -679,6 +679,7 @@ function ATSPanel({ resume, onEdit }: { resume: ResumeListItem; onEdit: () => vo
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function ResumesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
   const [selected, setSelected] = useState<ResumeListItem | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
@@ -692,19 +693,41 @@ export default function ResumesPage() {
   const [optimizing, setOptimizing] = useState(false);
   const [jdTargetResumeId, setJdTargetResumeId] = useState('');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const jd = params.get('jd_id');
-      if (jd) {
-        setActiveJdId(jd);
-        setShowJdModal(true);
-        const url = new URL(window.location.href);
-        url.searchParams.delete('jd_id');
-        window.history.replaceState({}, '', url.pathname);
+  // ─── Job Cart State & Effects ──────────────────────────────────────────
+  const [jds, setJds] = useState<JobDescriptionItem[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
+
+  const fetchJds = useCallback(async () => {
+    setCartLoading(true);
+    try {
+      const res = await getJobDescriptions();
+      if (res.data.success) {
+        setJds(res.data.data);
       }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCartLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchJds();
+  }, [fetchJds]);
+
+  useEffect(() => {
+    const jd = searchParams.get('jd_id');
+    const cart = searchParams.get('cart');
+    if (jd) {
+      setActiveJdId(jd);
+      setShowJdModal(true);
+      router.replace('/dashboard/resumes');
+    } else if (cart) {
+      setShowCart(true);
+      router.replace('/dashboard/resumes');
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (activeJdId && showJdModal) {
@@ -743,18 +766,36 @@ export default function ResumesPage() {
     try {
       const optRes = await optimizeForJD(jdTargetResumeId, jdData.text);
       const tailoredHtml = optRes.data.data.htmlContent;
-      const score = Math.floor(Math.random() * 15) + 80;
+      const optData = optRes.data.data;
+      const atsScore = optData.scores?.ats || 85;
       
       const verRes = await createResumeVersion(jdTargetResumeId, {
         jobTitle: jdData.title || 'Tailored Role',
         company: jdData.company || 'Target Company',
-        atsScore: score,
-        content: { htmlContent: tailoredHtml }
+        atsScore,
+        content: { 
+          htmlContent: tailoredHtml,
+          notes: optData.notes,
+          keywordsInserted: optData.keywordsInserted,
+          matchedKeywords: optData.matchedKeywords,
+          missingKeywords: optData.missingKeywords,
+          jobDescription: jdData.text
+        }
       });
       
       if (verRes.data.success) {
         const newVer = verRes.data.data;
         await generateCoverLetterForVersion(newVer.id, { jobDescription: jdData.text, tone: 'formal' });
+        
+        if (activeJdId) {
+          try {
+            await deleteJobDescription(activeJdId);
+            setJds(prev => prev.filter(item => item.id !== activeJdId));
+          } catch (e) {
+            console.error('Failed to clean up job description:', e);
+          }
+        }
+
         router.push(`/dashboard/resumes/tailor-version/${newVer.id}`);
       }
     } catch (e) {
@@ -811,6 +852,17 @@ export default function ResumesPage() {
               </button>
             ))}
           </div>
+
+          <button onClick={() => setShowCart(true)}
+            className="w-full mt-3 flex items-center justify-center gap-2 py-2 px-3 bg-[#121214] border border-[#222] hover:border-violet-500/50 hover:bg-[#18181b] rounded-xl text-white text-xs font-semibold transition-all group">
+            <Briefcase size={14} className="text-violet-400 group-hover:text-violet-300 transition-colors" />
+            Job Cart
+            {jds.length > 0 && (
+              <span className="bg-violet-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold leading-none">
+                {jds.length}
+              </span>
+            )}
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -831,14 +883,36 @@ export default function ResumesPage() {
             </div>
           ) : resumes.map(r => (
             <ResumeCard key={r.id} resume={r} selected={selected?.id === r.id}
-              onClick={() => setSelected(r)} onDelete={e => handleDelete(e, r.id)} />
+              onClick={() => { setSelected(r); setShowCart(false); }} onDelete={e => handleDelete(e, r.id)} />
           ))}
         </div>
       </aside>
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto p-6 xl:p-8 bg-[#0a0a0a]">
-        {selected ? (
+        {showCart ? (
+          <JobCartPanel 
+            jds={jds} 
+            loading={cartLoading} 
+            onOptimize={(jd) => {
+              setJdData({ company: jd.company || '', title: jd.title || '', text: jd.descriptionText });
+              setActiveJdId(jd.id);
+              setShowJdModal(true);
+            }} 
+            onDelete={async (id) => {
+              if (!confirm('Delete this job description from your cart?')) return;
+              try {
+                const res = await deleteJobDescription(id);
+                if (res.data.success) {
+                  setJds(prev => prev.filter(item => item.id !== id));
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }} 
+            onClose={() => setShowCart(false)}
+          />
+        ) : selected ? (
           <ATSPanel resume={selected} onEdit={() => router.push(`/dashboard/resumes/editor/${selected.id}`)} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center gap-10 max-w-2xl mx-auto">
@@ -901,7 +975,7 @@ export default function ResumesPage() {
               <h3 className="text-white font-semibold text-base flex items-center gap-2">
                 <Sparkles size={16} className="text-violet-400" /> Captured Job Description
               </h3>
-              <button onClick={() => setShowJdModal(false)} className="text-gray-600 hover:text-white transition-colors"><X size={16} /></button>
+              <button onClick={() => { setShowJdModal(false); setActiveJdId(null); }} className="text-gray-600 hover:text-white transition-colors"><X size={16} /></button>
             </div>
             
             <div className="space-y-4">
@@ -932,6 +1006,77 @@ export default function ResumesPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}    </div>
+  );
+}
+
+// ─── Job Cart Inline Panel ────────────────────────────────────────────────
+interface JobCartPanelProps {
+  jds: JobDescriptionItem[];
+  loading: boolean;
+  onOptimize: (jd: JobDescriptionItem) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}
+
+function JobCartPanel({ jds, loading, onOptimize, onDelete, onClose }: JobCartPanelProps) {
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div className="flex items-center justify-between border-b border-[#1e1e1e] pb-4">
+        <div>
+          <h1 className="text-white text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <Briefcase size={22} className="text-violet-400" /> Job Cart
+          </h1>
+          <p className="text-gray-500 text-xs mt-1">Select a captured job listing to score and tailor your resume, or save descriptions for later.</p>
+        </div>
+        <button onClick={onClose} className="text-gray-400 hover:text-white text-xs bg-[#111] border border-[#222] px-3 py-1.5 rounded-xl transition-colors">
+          Close Cart
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-gray-500" size={24} />
+        </div>
+      ) : jds.length === 0 ? (
+        <div className="text-center py-20 border border-[#1e1e1e] border-dashed rounded-2xl">
+          <Briefcase className="text-gray-600 mx-auto mb-3" size={32} />
+          <h3 className="text-white text-sm font-semibold">Your Job Cart is empty</h3>
+          <p className="text-gray-500 text-xs mt-1 max-w-xs mx-auto">Use the DearHR browser extension to capture jobs from LinkedIn, Indeed, or Naukri, and they will appear here automatically.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {jds.map((jd) => (
+            <div key={jd.id} className="bg-[#111] border border-[#222] hover:border-[#333] rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-white text-sm font-semibold truncate">{jd.title}</h3>
+                  <span className="text-[10px] text-gray-500 bg-[#1e1e24] px-2 py-0.5 rounded-full shrink-0">
+                    {new Date(jd.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-violet-400 text-xs font-medium mt-0.5">{jd.company}</p>
+                <p className="text-gray-500 text-xs mt-2 line-clamp-2 pr-4">{jd.descriptionText}</p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => onOptimize(jd)}
+                  className="bg-white hover:bg-gray-200 text-black text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <Sparkles size={13} /> Optimize & Tailor
+                </button>
+                <button
+                  onClick={() => onDelete(jd.id)}
+                  className="p-2 border border-red-500/20 hover:bg-red-500/10 text-red-400 rounded-xl transition-colors"
+                  title="Delete Job"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

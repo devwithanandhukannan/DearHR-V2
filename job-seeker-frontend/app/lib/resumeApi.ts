@@ -83,7 +83,24 @@ export const convertToEditable = (id: string) =>
   );
 
 export const optimizeForJD = (id: string, jobDescription: string) =>
-  api.post<{ success: boolean; data: { htmlContent: string; notes: string; keywordsInserted: string[] } }>(
+  api.post<{ 
+    success: boolean; 
+    data: { 
+      htmlContent: string; 
+      notes: string; 
+      keywordsInserted: string[];
+      scores?: {
+        ats: number;
+        formatting: number;
+        keywords: number;
+        grammar: number;
+        readability: number;
+        impact: number;
+      };
+      matchedKeywords?: string[];
+      missingKeywords?: string[];
+    } 
+  }>(
     `/jobseeker/resumes/${id}/optimize`, 
     { jobDescription }, 
     { timeout: 90_000 }
@@ -148,7 +165,7 @@ export const saveSmtpConfig = (payload: SmtpConfig) =>
   api.post<{ success: boolean; message: string }>('/jobseeker/profile/smtp', payload);
 
 export const draftEmailAndCV = (id: string, jobDescription: string) =>
-  api.post<{ success: boolean; data: { emailSubject: string; emailBody: string; tailoredHtmlContent: string } }>(
+  api.post<{ success: boolean; data: { emailSubject: string; emailBody: string; tailoredHtmlContent: string; versionId?: string } }>(
     `/jobseeker/resumes/${id}/draft-email`,
     { jobDescription },
     { timeout: 90_000 }
@@ -186,6 +203,7 @@ export interface ResumeVersionItem {
     subject?: string;
     body: string;
   };
+  application?: any;
 }
 
 export const saveJobDescription = (payload: { title?: string; company?: string; descriptionText: string }) =>
@@ -193,6 +211,12 @@ export const saveJobDescription = (payload: { title?: string; company?: string; 
 
 export const getJobDescription = (id: string) =>
   api.get<{ success: boolean; data: JobDescriptionItem }>(`/jobseeker/job-descriptions/${id}`);
+
+export const getJobDescriptions = () =>
+  api.get<{ success: boolean; data: JobDescriptionItem[] }>('/jobseeker/job-descriptions');
+
+export const deleteJobDescription = (id: string) =>
+  api.delete<{ success: boolean; message: string }>(`/jobseeker/job-descriptions/${id}`);
 
 export const getResumeVersions = (resumeId: string) =>
   api.get<{ success: boolean; data: ResumeVersionItem[] }>(`/jobseeker/resumes/${resumeId}/versions`);
@@ -218,3 +242,82 @@ export const generateCoverLetterForVersion = (versionId: string, payload: { jobD
 
 export const updateCoverLetter = (versionId: string, payload: { subject?: string; body: string }) =>
   api.put<{ success: boolean; data: { id: string; subject?: string; body: string } }>(`/jobseeker/resumes/versions/${versionId}/cover-letter`, payload);
+
+// ─── KANBAN BOARD APPLICATIONS & RELATION SHIPS ─────────────────────────
+export interface JobApplicationItem {
+  id: string;
+  jobSeekerProfileId: string;
+  resumeVersionId?: string | null;
+  resumeVersion?: {
+    id: string;
+    jobTitle?: string;
+    company?: string;
+    atsScore?: number;
+  } | null;
+  title: string;
+  company: string;
+  descriptionText?: string | null;
+  status: string; // wishlist, applied, interviewing, offers, archive
+  appliedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getApplications = () =>
+  api.get<{ success: boolean; data: JobApplicationItem[] }>('/jobseeker/applications');
+
+export const createApplication = (payload: {
+  title: string;
+  company: string;
+  descriptionText?: string;
+  status?: string;
+  notes?: string;
+  resumeVersionId?: string;
+}) =>
+  api.post<{ success: boolean; data: JobApplicationItem }>('/jobseeker/applications', payload);
+
+export const updateApplication = (id: string, payload: {
+  status?: string;
+  notes?: string;
+  appliedAt?: string | null;
+  resumeVersionId?: string | null;
+  title?: string;
+  company?: string;
+}) =>
+  api.put<{ success: boolean; data: JobApplicationItem }>(`/jobseeker/applications/${id}`, payload);
+
+export const deleteApplication = (id: string) =>
+  api.delete<{ success: boolean; message: string }>(`/jobseeker/applications/${id}`);
+
+// ─── TAILORED WORKSPACE AI COMPANION HELPERS ─────────────────────────────
+export const injectKeywordsForVersion = (versionId: string, keywords: string[]) =>
+  api.post<{ success: boolean; data: { htmlContent: string; atsScore: number; notes: string; content: any } }>(
+    `/jobseeker/resumes/versions/${versionId}/inject-keywords`,
+    { keywords },
+    { timeout: 90_000 }
+  );
+
+export const getMockInterviewQuestions = (versionId: string) =>
+  api.get<{ success: boolean; data: { id: string; question: string; type: string }[] }>(
+    `/jobseeker/resumes/versions/${versionId}/interview-questions`
+  );
+
+export const submitInterviewAnswer = (question: string, answer: string) =>
+  api.post<{ success: boolean; data: { score: number; feedback: string; suggestedAnswer: string } }>(
+    '/jobseeker/resumes/versions/interview-feedback',
+    { question, answer },
+    { timeout: 60_000 }
+  );
+
+export const generateOutreachMessage = (versionId: string, payload: { type: 'linkedin_connection' | 'linkedin_inmail' | 'cold_email'; recipientTitle: string }) =>
+  api.post<{ success: boolean; data: { subject?: string; body: string } }>(
+    `/jobseeker/resumes/versions/${versionId}/outreach`,
+    payload,
+    { timeout: 90_000 }
+  );
+
+export const getSalaryInsights = (versionId: string) =>
+  api.get<{ success: boolean; data: { estimatedBrackets: string; leverageFactors: string[]; emailScript: string; liveScript: string } }>(
+    `/jobseeker/resumes/versions/${versionId}/salary-insights`
+  );

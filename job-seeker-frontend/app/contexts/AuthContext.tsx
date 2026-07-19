@@ -46,6 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response.data.success) {
           setIsAuthenticated(true);
           setUser(response.data.user);
+          if (response.data.accessToken) {
+            setAccessToken(response.data.accessToken);
+            localStorage.setItem('token', response.data.accessToken);
+          }
         } else {
           throw new Error('Not authenticated');
         }

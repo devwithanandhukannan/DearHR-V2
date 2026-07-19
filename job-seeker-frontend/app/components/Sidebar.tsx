@@ -18,7 +18,7 @@ import {
   Mail
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 
 interface SidebarProps {
@@ -35,6 +35,8 @@ export default function Sidebar({ user }: SidebarProps) {
   const menuItems = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
     { icon: FileText, label: 'My Resumes', href: '/dashboard/resumes' },
+    { icon: Briefcase, label: 'Job Cart', href: '/dashboard/resumes?cart=true' },
+    { icon: Calendar, label: 'Tracker Board', href: '/dashboard/tracker' },
     { icon: Mail, label: 'Draft & Send', href: '/dashboard/resumes/email-tailor' },
     { icon: User, label: 'Profile Workspace', href: '/dashboard/profile' },
   ];
@@ -43,13 +45,21 @@ export default function Sidebar({ user }: SidebarProps) {
     logout();
   };
 
-  const NavLinks = ({ onClickItem }: { onClickItem?: () => void }) => (
-    <>
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = item.href === '/dashboard' 
-          ? pathname === '/dashboard' 
-          : pathname.startsWith(item.href);
+  const NavLinks = ({ onClickItem }: { onClickItem?: () => void }) => {
+    const searchParams = useSearchParams();
+    
+    return (
+      <>
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isCartActive = item.label === 'Job Cart' && pathname === '/dashboard/resumes' && searchParams.get('cart') === 'true';
+          const isActive = item.href === '/dashboard' 
+            ? pathname === '/dashboard' 
+            : item.label === 'Job Cart'
+              ? isCartActive
+              : item.label === 'My Resumes'
+                ? pathname === '/dashboard/resumes' && !searchParams.get('cart')
+                : pathname.startsWith(item.href);
 
         return (
           <Link
@@ -69,8 +79,9 @@ export default function Sidebar({ user }: SidebarProps) {
           </Link>
         );
       })}
-    </>
-  );
+      </>
+    );
+  };
 
   return (
     <>

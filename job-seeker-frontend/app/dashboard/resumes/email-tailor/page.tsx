@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Mail, FileText, Send, Sparkles, Loader2,
-  AlertCircle, CheckCircle2, Lock, Save, X
+  AlertCircle, CheckCircle2, Lock, Save, X, MessageSquare, Check
 } from 'lucide-react';
 import api from '@/app/lib/axios';
 import { useGlassToast } from '@/app/components/GlassToastContainer';
 import {
   getSmtpConfig, saveSmtpConfig, draftEmailAndCV, sendEmailWithCV,
-  getAllResumes, type SmtpConfig, type ResumeListItem
+  getAllResumes, generateOutreachMessage, type SmtpConfig, type ResumeListItem
 } from '@/app/lib/resumeApi';
 
 export default function EmailTailorPage() {
@@ -45,6 +45,15 @@ export default function EmailTailorPage() {
   const [emailBody, setEmailBody] = useState('');
   const [recipient, setRecipient] = useState('');
   const [attachTailored, setAttachTailored] = useState(true);
+
+  // Social Outreach & Channel states
+  const [outreachChannel, setOutreachChannel] = useState<'email' | 'social'>('email');
+  const [outreachType, setOutreachType] = useState<'linkedin_connection' | 'linkedin_inmail' | 'cold_email'>('linkedin_connection');
+  const [recipientTitle, setRecipientTitle] = useState('Hiring Manager');
+  const [outreachSubject, setOutreachSubject] = useState('');
+  const [outreachBody, setOutreachBody] = useState('');
+  const [generatingOutreach, setGeneratingOutreach] = useState(false);
+  const [versionId, setVersionId] = useState<string>('');
 
   // CV/HTML Render
   const [originalHtml, setOriginalHtml] = useState('');
@@ -137,16 +146,43 @@ export default function EmailTailorPage() {
     try {
       const res = await draftEmailAndCV(selectedResumeId, jobDescription);
       if (res.data.success) {
-        const { emailSubject, emailBody, tailoredHtmlContent } = res.data.data;
+        const { emailSubject, emailBody, tailoredHtmlContent, versionId } = res.data.data;
         setEmailSubject(emailSubject);
         setEmailBody(emailBody);
         setTailoredHtml(tailoredHtmlContent);
+        if (versionId) {
+          setVersionId(versionId);
+        }
+        setOutreachBody('');
         showToast('Draft Generated', 'Cover email and tailored resume are ready.', 'success');
       }
     } catch (err: any) {
       showToast('Error', err.response?.data?.error || 'Failed to tailor application.', 'danger');
     } finally {
       setDrafting(false);
+    }
+  };
+
+  const handleGenerateSocialOutreach = async () => {
+    if (!versionId) {
+      showToast('Validation Error', 'Please click Tailor & Draft first to create the tailored resume context.', 'danger');
+      return;
+    }
+    setGeneratingOutreach(true);
+    try {
+      const res = await generateOutreachMessage(versionId, {
+        type: outreachType,
+        recipientTitle
+      });
+      if (res.data.success) {
+        setOutreachSubject(res.data.data.subject || '');
+        setOutreachBody(res.data.data.body);
+        showToast('Outreach Drafted', 'Social message template generated successfully.', 'success');
+      }
+    } catch (err: any) {
+      showToast('Error', err.response?.data?.error || 'Failed to generate outreach message.', 'danger');
+    } finally {
+      setGeneratingOutreach(false);
     }
   };
 
@@ -285,79 +321,168 @@ export default function EmailTailorPage() {
 
         {/* Middle Pane - Outreach Email Composer */}
         <section className="w-2/5 min-w-[380px] border-r border-[#1e1e1e] flex flex-col bg-[#080808]">
-          <div className="p-4 border-b border-[#1e1e1e] flex items-center gap-1.5 text-xs text-gray-400 font-semibold uppercase tracking-wider">
-            <Mail size={12} className="text-blue-500" /> Step 2: Cover Outreach Email
+          <div className="p-4 border-b border-[#1e1e1e] flex items-center justify-between">
+            <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider flex items-center gap-1.5">
+              <Mail size={12} className="text-blue-500" /> Step 2: Outreach Channel
+            </span>
+            {/* Toggle Channels */}
+            <div className="flex bg-[#121216] border border-[#1e1e26] p-0.5 rounded-lg">
+              <button 
+                onClick={() => setOutreachChannel('email')}
+                className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                  outreachChannel === 'email' 
+                    ? 'bg-zinc-800 text-white shadow' 
+                    : 'text-gray-500 hover:text-white'
+                }`}
+              >
+                Email (SMTP)
+              </button>
+              <button 
+                onClick={() => setOutreachChannel('social')}
+                className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                  outreachChannel === 'social' 
+                    ? 'bg-zinc-800 text-white shadow' 
+                    : 'text-gray-500 hover:text-white'
+                }`}
+              >
+                LinkedIn / Social
+              </button>
+            </div>
           </div>
-          <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
-            <div>
-              <label className="block text-gray-500 text-xs font-medium mb-1.5">Recipient Address (To:)</label>
-              <input
-                type="email"
-                value={recipient}
-                onChange={e => setRecipient(e.target.value)}
-                placeholder="recruiter@company.com"
-                className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-4 py-2.5 text-white text-xs placeholder-gray-700 focus:outline-none focus:border-white/30 transition-colors"
-              />
-            </div>
 
-            <div>
-              <label className="block text-gray-500 text-xs font-medium mb-1.5">Subject Line</label>
-              <input
-                type="text"
-                value={emailSubject}
-                onChange={e => setEmailSubject(e.target.value)}
-                placeholder="Application for..."
-                className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-4 py-2.5 text-white text-xs placeholder-gray-700 focus:outline-none focus:border-white/30 transition-colors"
-              />
-            </div>
-
-            <div className="flex-1 flex flex-col">
-              <label className="block text-gray-500 text-xs font-medium mb-1.5">Cover Letter Body</label>
-              <textarea
-                value={emailBody}
-                onChange={e => setEmailBody(e.target.value)}
-                placeholder="Email body cover letter will populate here after you click Tailor..."
-                className="flex-1 w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-4 py-3.5 text-white text-xs placeholder-gray-700 focus:outline-none focus:border-white/30 transition-colors resize-none leading-relaxed font-sans"
-              />
-            </div>
-
-            {/* Attachments Configuration */}
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3 flex flex-col gap-2 flex-shrink-0">
-              <label className="block text-gray-500 text-[10px] font-semibold uppercase tracking-wide">Attachment Options</label>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
-                  <input
-                    type="radio"
-                    checked={attachTailored}
-                    onChange={() => setAttachTailored(true)}
-                    disabled={!tailoredHtml}
-                    className="w-3.5 h-3.5 border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-0"
-                  />
-                  <span>Attach tailored CV</span>
-                </label>
-                <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
-                  <input
-                    type="radio"
-                    checked={!attachTailored}
-                    onChange={() => setAttachTailored(false)}
-                    className="w-3.5 h-3.5 border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-0"
-                  />
-                  <span>Attach original CV</span>
-                </label>
+          {outreachChannel === 'email' ? (
+            <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
+              <div>
+                <label className="block text-gray-500 text-xs font-medium mb-1.5">Recipient Address (To:)</label>
+                <input
+                  type="email"
+                  value={recipient}
+                  onChange={e => setRecipient(e.target.value)}
+                  placeholder="recruiter@company.com"
+                  className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-4 py-2.5 text-white text-xs placeholder-gray-700 focus:outline-none focus:border-white/30 transition-colors"
+                />
               </div>
-              {!tailoredHtml && (
-                <p className="text-[10px] text-gray-600">Tailored CV option becomes selectable once generated.</p>
+
+              <div>
+                <label className="block text-gray-500 text-xs font-medium mb-1.5">Subject Line</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={e => setEmailSubject(e.target.value)}
+                  placeholder="Application for..."
+                  className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-4 py-2.5 text-white text-xs placeholder-gray-700 focus:outline-none focus:border-white/30 transition-colors"
+                />
+              </div>
+
+              <div className="flex-1 flex flex-col">
+                <label className="block text-gray-500 text-xs font-medium mb-1.5">Cover Letter Body</label>
+                <textarea
+                  value={emailBody}
+                  onChange={e => setEmailBody(e.target.value)}
+                  placeholder="Email body cover letter will populate here after you click Tailor..."
+                  className="flex-1 w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-4 py-3.5 text-white text-xs placeholder-gray-700 focus:outline-none focus:border-white/30 transition-colors resize-none leading-relaxed font-sans"
+                />
+              </div>
+
+              {/* Attachments Configuration */}
+              <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3 flex flex-col gap-2 flex-shrink-0">
+                <label className="block text-gray-500 text-[10px] font-semibold uppercase tracking-wide">Attachment Options</label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      checked={attachTailored}
+                      onChange={() => setAttachTailored(true)}
+                      disabled={!tailoredHtml}
+                      className="w-3.5 h-3.5 border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-0"
+                    />
+                    <span>Attach tailored CV</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      checked={!attachTailored}
+                      onChange={() => setAttachTailored(false)}
+                      className="w-3.5 h-3.5 border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-0"
+                    />
+                    <span>Attach original CV</span>
+                  </label>
+                </div>
+                {!tailoredHtml && (
+                  <p className="text-[10px] text-gray-600">Tailored CV option becomes selectable once generated.</p>
+                )}
+              </div>
+
+              <button
+                onClick={handleSendEmail}
+                disabled={sending || !recipient.trim() || !emailBody.trim()}
+                className="w-full bg-amber-500 text-black py-3 rounded-xl text-xs font-bold hover:bg-amber-400 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5 flex-shrink-0"
+              >
+                {sending ? <><Loader2 size={13} className="animate-spin" />Sending via SMTP...</> : <><Send size={13} />Send Application</>}
+              </button>
+            </div>
+          ) : (
+            <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
+              <div>
+                <label className="block text-gray-500 text-xs font-medium mb-1.5">Social Platform</label>
+                <select
+                  value={outreachType}
+                  onChange={e => setOutreachType(e.target.value as any)}
+                  className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-3 py-2 text-white text-xs focus:outline-none"
+                >
+                  <option value="linkedin_connection">LinkedIn Connection Request (300 Char limit)</option>
+                  <option value="linkedin_inmail">LinkedIn InMail</option>
+                  <option value="cold_email">Recruiter Cold Outreach Text</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-500 text-xs font-medium mb-1.5">Recipient Role Title</label>
+                <input
+                  type="text"
+                  value={recipientTitle}
+                  onChange={e => setRecipientTitle(e.target.value)}
+                  placeholder="e.g. Engineering Manager, Technical Recruiter"
+                  className="w-full bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none"
+                />
+              </div>
+
+              <button
+                onClick={handleGenerateSocialOutreach}
+                disabled={generatingOutreach || !versionId}
+                className="w-full bg-white text-black py-2.5 rounded-xl text-xs font-bold hover:bg-gray-150 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+              >
+                {generatingOutreach ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                Generate Social Message
+              </button>
+
+              {!versionId && (
+                <p className="text-[10px] text-red-400 text-center">
+                  ⚠️ Click "Tailor & Draft" on the left pane to initialize this tailored CV version first.
+                </p>
+              )}
+
+              {outreachBody && (
+                <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[9px] text-zinc-500 block uppercase tracking-wider">Social Draft Message</span>
+                    <p className="text-zinc-200 text-xs whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto pr-1">
+                      {outreachBody}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(outreachBody);
+                      showToast('Copied', 'Social outreach note copied to clipboard.', 'success');
+                    }}
+                    className="w-full bg-zinc-800 text-white py-2 rounded-xl text-xs font-semibold mt-3 hover:bg-zinc-700 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Check size={13} /> Copy to Clipboard
+                  </button>
+                </div>
               )}
             </div>
-
-            <button
-              onClick={handleSendEmail}
-              disabled={sending || !recipient.trim() || !emailBody.trim()}
-              className="w-full bg-amber-500 text-black py-3 rounded-xl text-xs font-bold hover:bg-amber-400 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5 flex-shrink-0"
-            >
-              {sending ? <><Loader2 size={13} className="animate-spin" />Sending via SMTP...</> : <><Send size={13} />Send Application</>}
-            </button>
-          </div>
+          )}
         </section>
 
         {/* Right Pane - Real-Time updated PDF/HTML Preview */}

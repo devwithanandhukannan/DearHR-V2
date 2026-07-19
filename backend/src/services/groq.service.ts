@@ -174,7 +174,9 @@ JSON Schema:
     "impact": 80
   },
   "notes": "Brief explanation of changes made to optimize the resume",
-  "keywordsInserted": ["keyword1", "keyword2"]
+  "keywordsInserted": ["keyword1", "keyword2"],
+  "matchedKeywords": ["keyword1", "keyword2"],
+  "missingKeywords": ["keyword3", "keyword4"]
 }
 
 Resume HTML:
@@ -973,4 +975,186 @@ Return ONLY valid JSON with this schema:
   });
 
   return JSON.parse(completion.choices[0]?.message?.content ?? '{}') as { subject?: string; body: string };
+};
+
+export const contextualInjectKeywords = async (htmlContent: string, keywords: string[]) => {
+  const prompt = `You are an expert ATS resume writer. 
+Take the following resume HTML and a list of target keywords that are currently missing.
+Naturally and professionally rewrite descriptions, skills, or experience bullets to seamlessly inject these keywords without altering layout tags.
+
+Keywords to inject: ${JSON.stringify(keywords)}
+
+Return ONLY valid JSON with this schema:
+{
+  "htmlContent": "fully rewritten HTML here",
+  "scores": {
+    "ats": 95,
+    "formatting": 80,
+    "keywords": 95,
+    "grammar": 90,
+    "readability": 85,
+    "impact": 85
+  },
+  "notes": "Brief explanation of where keywords were injected"
+}
+
+Resume HTML:
+"""
+${htmlContent}
+"""`;
+
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: MODEL,
+    temperature: 0.3,
+    response_format: { type: 'json_object' },
+  });
+
+  return JSON.parse(completion.choices[0]?.message?.content ?? '{}') as {
+    htmlContent: string;
+    scores: any;
+    notes: string;
+  };
+};
+
+export const generateInterviewQuestions = async (htmlContent: string, jobDescription: string) => {
+  const prompt = `You are a technical recruiter.
+Analyze the candidate's resume HTML and the target job description.
+Generate 5 mock interview questions (mix of technical, behavioral, and resume-specific questions) that a hiring manager would likely ask this candidate.
+
+Return ONLY valid JSON matching this schema:
+{
+  "questions": [
+    { "id": "1", "question": "Question text here", "type": "Technical" }
+  ]
+}
+Make sure you generate exactly 5 objects in the questions array.
+
+Resume HTML:
+"""
+${htmlContent}
+"""
+
+Job Description:
+"""
+${jobDescription}
+"""`;
+
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: MODEL,
+    temperature: 0.7,
+    response_format: { type: 'json_object' },
+  });
+
+  return JSON.parse(completion.choices[0]?.message?.content ?? '{}') as {
+    questions: { id: string; question: string; type: string }[];
+  };
+};
+
+export const evaluateInterviewAnswer = async (question: string, answer: string) => {
+  const prompt = `You are an expert interviewer.
+Evaluate the candidate's answer to this mock interview question.
+Provide constructive feedback, a score between 0 and 100, and a suggested exemplary answer utilizing the STAR method (Situation, Task, Action, Result) if applicable.
+
+Question: "${question}"
+Candidate's Answer: "${answer}"
+
+Return ONLY valid JSON with this schema:
+{
+  "score": 85,
+  "feedback": "constructive feedback text",
+  "suggestedAnswer": "suggested star answer"
+}`;
+
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: MODEL,
+    temperature: 0.5,
+    response_format: { type: 'json_object' },
+  });
+
+  return JSON.parse(completion.choices[0]?.message?.content ?? '{}') as {
+    score: number;
+    feedback: string;
+    suggestedAnswer: string;
+  };
+};
+
+export const generateColdOutreach = async (
+  type: 'linkedin_connection' | 'linkedin_inmail' | 'cold_email',
+  resumeText: string,
+  jdText: string,
+  recipientTitle: string
+) => {
+  const prompt = `You are a cold outreach specialist.
+Write a highly converting outreach message for a candidate targeting a job.
+Use candidate details from their resume, target requirements from the job description, and customize the message tone to the recipient's title (e.g. Hiring Manager, Recruiter).
+
+Outreach Channel: ${type === 'linkedin_connection' ? 'LinkedIn Connection Note (STRICT limit under 300 characters)' : type === 'linkedin_inmail' ? 'LinkedIn InMail (concise, high impact)' : 'Cold Email'}
+Recipient Title: ${recipientTitle}
+
+Candidate Profile Summary:
+"""
+${resumeText.substring(0, 3000)}
+"""
+
+Target Job Description:
+"""
+${jdText.substring(0, 2000)}
+"""
+
+Return ONLY valid JSON with this schema:
+{
+  "subject": "Outreach Subject Line (leave empty for LinkedIn Connection note)",
+  "body": "Outreach message body here"
+}`;
+
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: MODEL,
+    temperature: 0.7,
+    response_format: { type: 'json_object' },
+  });
+
+  return JSON.parse(completion.choices[0]?.message?.content ?? '{}') as {
+    subject?: string;
+    body: string;
+  };
+};
+
+export const generateSalaryNegotiation = async (jdText: string) => {
+  const prompt = `You are a professional compensation negotiator.
+Analyze the following job description.
+Estimate realistic market salary brackets, list key leverage factors/skills found in the job, and write script templates (email & live discussion) for negotiating an offer.
+
+Job Description:
+"""
+${jdText.substring(0, 3000)}
+"""
+
+Return ONLY valid JSON matching this schema:
+{
+  "estimatedBrackets": "e.g. $90,000 - $115,000 based on experience",
+  "leverageFactors": [
+    "leverage factor 1",
+    "leverage factor 2"
+  ],
+  "emailScript": "Email template for salary negotiation",
+  "liveScript": "Live discussion talking points / script"
+}`;
+
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: MODEL,
+    temperature: 0.5,
+    response_format: { type: 'json_object' },
+  });
+
+  return JSON.parse(completion.choices[0]?.message?.content ?? '{}') as {
+    estimatedBrackets: string;
+    leverageFactors: string[];
+    emailScript: string;
+    liveScript: string;
+  };
 };

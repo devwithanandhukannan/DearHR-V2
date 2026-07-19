@@ -546,12 +546,37 @@ export const draftEmailAndCV = async (req: Request, res: Response) => {
       optimizeForJD((resume.content as any)?.htmlContent || '', jobDescription)
     ]);
 
+    // Automatically save a new ResumeVersion for tracking and outreach integration
+    const newVersion = await prisma.resumeVersion.create({
+      data: {
+        resumeId: id,
+        jobTitle: parsedData.basics?.label || 'Tailored Position',
+        company: 'Target Company',
+        atsScore: tailoredResult.scores?.ats || 80,
+        content: {
+          htmlContent: tailoredResult.htmlContent,
+          notes: tailoredResult.notes,
+          keywordsInserted: tailoredResult.keywordsInserted || [],
+          matchedKeywords: tailoredResult.matchedKeywords || [],
+          missingKeywords: tailoredResult.missingKeywords || [],
+          jobDescription
+        },
+        coverLetter: {
+          create: {
+            subject: emailDraft.subject || 'Application for Role',
+            body: emailDraft.body || ''
+          }
+        }
+      }
+    });
+
     return res.status(200).json({
       success: true,
       data: {
         emailSubject: emailDraft.subject || 'Application for Role',
         emailBody: emailDraft.body || '',
-        tailoredHtmlContent: tailoredResult.htmlContent || ''
+        tailoredHtmlContent: tailoredResult.htmlContent || '',
+        versionId: newVersion.id
       }
     });
   } catch (error) {

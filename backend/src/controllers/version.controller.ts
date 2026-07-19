@@ -60,6 +60,55 @@ export const getJobDescription = async (req: Request, res: Response) => {
   }
 };
 
+export const getJobDescriptions = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const profileId = await getProfileId(userId);
+    if (!profileId) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+    const jds = await prisma.jobDescription.findMany({
+      where: { jobSeekerId: profileId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return res.status(200).json({ success: true, data: jds });
+  } catch (err: any) {
+    console.error('getJobDescriptions error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+  }
+};
+
+export const deleteJobDescription = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const profileId = await getProfileId(userId);
+    if (!profileId) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+    const id = req.params.id as string;
+    
+    const jd = await prisma.jobDescription.findFirst({
+      where: { id, jobSeekerId: profileId }
+    });
+
+    if (!jd) {
+      return res.status(404).json({ success: false, error: 'Job description not found' });
+    }
+
+    await prisma.jobDescription.delete({
+      where: { id }
+    });
+
+    return res.status(200).json({ success: true, message: 'Job description deleted successfully.' });
+  } catch (err: any) {
+    console.error('deleteJobDescription error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+  }
+};
+
 export const getResumeVersions = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -89,7 +138,7 @@ export const getResumeVersionById = async (req: Request, res: Response) => {
 
     const version = await prisma.resumeVersion.findUnique({
       where: { id: versionId },
-      include: { coverLetter: true, resume: true }
+      include: { coverLetter: true, resume: true, application: true }
     });
 
     if (!version) return res.status(404).json({ success: false, error: 'Resume version not found' });
