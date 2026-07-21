@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <style>
     :root {
-      --apple-bg: rgba(14, 15, 19, 0.92);
-      --apple-card: rgba(26, 27, 34, 0.65);
-      --apple-card-inner: rgba(34, 35, 44, 0.5);
+      --apple-bg: rgba(14, 15, 19, 0.94);
+      --apple-card: rgba(26, 27, 34, 0.7);
+      --apple-card-inner: rgba(34, 35, 44, 0.55);
       --apple-border: rgba(255, 255, 255, 0.08);
       --apple-border-focus: rgba(255, 255, 255, 0.2);
       --apple-blue: #0a84ff;
@@ -16,7 +16,7 @@
       --apple-red: #ff453a;
       --apple-text: #f5f5f7;
       --apple-subtext: #86868b;
-      --apple-muted: #6e6e73;
+      --apple-secondary: #a1a1a6;
     }
 
     * {
@@ -26,12 +26,12 @@
     }
 
     body {
-      width: 380px;
+      width: 385px;
       margin: 0;
-      padding: 14px;
-      background-color: #0b0c10;
+      padding: 12px;
+      background-color: #090a0e;
       background-image: 
-        radial-gradient(circle at 50% 0%, rgba(10, 132, 255, 0.08) 0%, transparent 50%);
+        radial-gradient(circle at 50% 0%, rgba(10, 132, 255, 0.09) 0%, transparent 50%);
       color: var(--apple-text);
       overflow-x: hidden;
     }
@@ -45,15 +45,15 @@
     .container {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
-    /* Apple Minimal Header */
+    /* Apple Header */
     .apple-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 4px 2px;
+      padding: 2px 2px 6px 2px;
     }
 
     .brand-group {
@@ -85,14 +85,14 @@
     .header-badge {
       font-size: 10px;
       font-weight: 500;
-      color: var(--apple-subtext);
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--apple-border);
+      color: var(--apple-blue);
+      background: rgba(10, 132, 255, 0.1);
+      border: 1px solid rgba(10, 132, 255, 0.2);
       padding: 2px 8px;
       border-radius: 12px;
     }
 
-    /* Apple Segmented Control Tab Switcher */
+    /* Segmented Control Tab Switcher */
     .segmented-control {
       display: flex;
       background: rgba(255, 255, 255, 0.05);
@@ -130,17 +130,17 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
-    /* Apple Translucent Panel */
+    /* Apple Panel */
     .apple-panel {
       background: var(--apple-card);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid var(--apple-border);
       border-radius: 14px;
-      padding: 14px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
     }
 
@@ -170,7 +170,7 @@
       box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25);
     }
 
-    /* Apple Minimalist Buttons */
+    /* Buttons */
     .btn {
       cursor: pointer;
       border: none;
@@ -218,119 +218,108 @@
       background: rgba(255, 69, 58, 0.1);
     }
 
-    /* Intelligence Minimalist Cards */
-    .score-card {
-      background: var(--apple-card-inner);
-      border: 1px solid var(--apple-border);
-      border-radius: 11px;
+    /* Section Cards */
+    .verdict-card {
+      background: linear-gradient(135deg, rgba(10, 132, 255, 0.12) 0%, rgba(94, 92, 230, 0.08) 100%);
+      border: 1px solid rgba(10, 132, 255, 0.25);
+      border-radius: 12px;
       padding: 12px;
       display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .score-ring {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: rgba(10, 132, 255, 0.08);
-      border: 2.5px solid var(--apple-blue);
-      display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      gap: 8px;
     }
 
-    .score-val {
-      font-size: 15px;
+    .verdict-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .rating-badge {
+      font-size: 13px;
       font-weight: 700;
       color: #ffffff;
-      line-height: 1;
     }
 
-    .score-sub {
-      font-size: 8px;
-      font-weight: 600;
-      color: var(--apple-subtext);
-      text-transform: uppercase;
-      margin-top: 1px;
-    }
-
-    .score-info {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      flex: 1;
-    }
-
-    .score-headline {
-      font-size: 13px;
-      font-weight: 600;
-      color: #ffffff;
-    }
-
-    .score-desc {
+    .prob-badge {
       font-size: 10px;
-      color: var(--apple-subtext);
-      line-height: 1.35;
+      font-weight: 600;
+      color: var(--apple-green);
+      background: rgba(48, 209, 88, 0.12);
+      border: 1px solid rgba(48, 209, 88, 0.25);
+      padding: 2px 7px;
+      border-radius: 10px;
     }
 
     .section-box {
       background: var(--apple-card-inner);
       border: 1px solid var(--apple-border);
       border-radius: 11px;
-      padding: 11px;
+      padding: 10px 12px;
     }
 
     .section-title {
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--apple-subtext);
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       margin-bottom: 6px;
       display: flex;
       align-items: center;
-      gap: 5px;
+      justify-content: space-between;
     }
 
-    .section-content {
-      font-size: 11.5px;
-      color: var(--apple-text);
-      line-height: 1.45;
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
     }
 
-    .skill-tag {
+    .metric-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--apple-border);
+      border-radius: 8px;
+      padding: 6px 8px;
+    }
+
+    .metric-lbl {
+      font-size: 9px;
+      color: var(--apple-subtext);
+      font-weight: 500;
+    }
+
+    .metric-val {
+      font-size: 11px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-top: 1px;
+    }
+
+    .tag-pill {
       display: inline-block;
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 6px;
+      font-size: 9.5px;
+      padding: 2px 6px;
+      border-radius: 5px;
       background: rgba(255, 255, 255, 0.07);
       border: 1px solid var(--apple-border);
       color: var(--apple-secondary);
-      margin-right: 4px;
-      margin-bottom: 4px;
-    }
-
-    .resource-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
+      margin-right: 3px;
+      margin-bottom: 3px;
     }
 
     .resource-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 11px;
-      padding: 6px 8px;
+      font-size: 10.5px;
+      padding: 5px 8px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--apple-border);
       border-radius: 7px;
       color: var(--apple-text);
       text-decoration: none;
+      margin-top: 4px;
       transition: all 0.15s ease;
     }
 
@@ -340,24 +329,9 @@
       color: var(--apple-blue-hover);
     }
 
-    .resource-name {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 500;
-    }
-
-    .resource-badge {
-      font-size: 9px;
-      color: var(--apple-subtext);
-      background: rgba(255, 255, 255, 0.06);
-      padding: 1px 5px;
-      border-radius: 4px;
-    }
-
     .loading-spinner {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border: 2px solid rgba(255, 255, 255, 0.1);
       border-top-color: var(--apple-blue);
       border-radius: 50%;
@@ -392,27 +366,27 @@
         <div class="brand-icon">D</div>
         <span class="brand-name">DearHR</span>
       </div>
-      <span class="header-badge">Intelligence</span>
+      <span class="header-badge">AI Intelligence v3.0</span>
     </div>
 
     <!-- Segmented Tab Control -->
     <div id="nav-bar" class="segmented-control hidden">
       <button id="nav-capture-btn" class="segmented-tab active">
-        💼 Capture
+        💼 Job Capture
       </button>
       <button id="nav-intel-btn" class="segmented-tab">
-        ✨ Intelligence
+        ✨ AI Research Report
       </button>
     </div>
 
     <!-- Auth View -->
     <div id="auth-screen" class="apple-panel">
-      <label>Connect to DearHR</label>
-      <input type="password" id="token-input" placeholder="Paste authentication token...">
+      <label>Connect Extension</label>
+      <input type="password" id="token-input" placeholder="Paste your authentication token...">
       <p style="font-size: 10px; color: var(--apple-subtext); margin: 0; line-height: 1.4;">
         Find your access token in DearHR Profile Settings.
       </p>
-      <button id="save-token-btn" class="btn btn-primary">Connect Account</button>
+      <button id="save-token-btn" class="btn btn-primary">Connect Extension</button>
     </div>
 
     <!-- Main Views Container -->
@@ -427,11 +401,11 @@
 
         <div>
           <label>Job Title</label>
-          <input type="text" id="title-input" placeholder="e.g. Senior iOS Engineer">
+          <input type="text" id="title-input" placeholder="e.g. Senior Software Engineer">
         </div>
 
         <div>
-          <label>Job Description</label>
+          <label>Job Description Text</label>
           <textarea id="jd-textarea" rows="5" placeholder="Extracting content from webpage..."></textarea>
         </div>
 
@@ -457,80 +431,133 @@
 
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--apple-border); padding-top: 8px; margin-top: 2px;">
           <span id="connection-status" style="font-size: 10px; color: var(--apple-green); display: flex; align-items: center; gap: 4px;">
-            ● Connected
+            ● Connected to DearHR
           </span>
           <button id="logout-btn" class="btn btn-danger">Disconnect</button>
         </div>
       </div>
 
-      <!-- VIEW 2: Intelligence & Research -->
+      <!-- VIEW 2: 15-Step AI Job Intelligence Dashboard -->
       <div id="view-intel" class="apple-panel hidden">
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 11px; font-weight: 600; color: var(--apple-text);">
-            Job Analysis & Global Research
+            Full 15-Step Intelligence Report
           </span>
           <button id="run-intel-btn" class="btn btn-secondary" style="padding: 4px 8px; font-size: 10px;">
-            ⚡ Re-Scan
+            ⚡ Re-Scan Intelligence
           </button>
         </div>
 
         <!-- Loading State -->
-        <div id="intel-loading" class="hidden" style="text-align: center; padding: 20px 0;">
+        <div id="intel-loading" class="hidden" style="text-align: center; padding: 24px 0;">
           <div class="loading-spinner"></div>
-          <div style="font-size: 11px; font-weight: 500; color: var(--apple-text);">Scanning Job Worth & Global Intel...</div>
-          <div style="font-size: 10px; color: var(--apple-subtext); margin-top: 3px;">Analyzing publisher footprint & market sources</div>
+          <div style="font-size: 11px; font-weight: 600; color: var(--apple-text);">Running 15-Step Web Research & Verification...</div>
+          <div style="font-size: 10px; color: var(--apple-subtext); margin-top: 3px;">Analyzing ATS, recruiter profile, news, ghost job risk & resume fit</div>
         </div>
 
-        <!-- Intelligence Content -->
-        <div id="intel-content" class="container" style="gap: 10px;">
+        <!-- Report Content -->
+        <div id="intel-content" class="container" style="gap: 8px;">
 
-          <!-- 1. Is this job worth it & Match Possibility -->
-          <div class="score-card">
-            <div class="score-ring">
-              <span class="score-val" id="res-match-score">88%</span>
-              <span class="score-sub">Match</span>
+          <!-- STEP 15: Final AI Verdict & Rating -->
+          <div class="verdict-card">
+            <div class="verdict-header">
+              <span class="rating-badge" id="res-verdict-rating">★★★★☆ Good Opportunity</span>
+              <span class="prob-badge" id="res-verdict-prob">75% Interview Chance</span>
             </div>
-            <div class="score-info">
-              <div class="score-headline" id="res-worth-title">High Opportunity Role</div>
-              <div class="score-desc" id="res-worth-desc">
-                Strong skill alignment, verified corporate employer, clear career growth potential.
+            <div style="font-size: 10.5px; color: var(--apple-text); line-height: 1.35;" id="res-verdict-reasons">
+              Top Reasons: Strong ATS alignment, verified corporate team, competitive salary.
+            </div>
+          </div>
+
+          <!-- STEP 14: Executive Summary Grid -->
+          <div class="section-box">
+            <div class="section-title">📊 Executive Summary & Metrics</div>
+            <div class="grid-2">
+              <div class="metric-pill">
+                <div class="metric-lbl">Resume Match</div>
+                <div class="metric-val" id="res-match-val" style="color: var(--apple-green);">88% Match</div>
+              </div>
+              <div class="metric-pill">
+                <div class="metric-lbl">Ghost Job Risk</div>
+                <div class="metric-val" id="res-ghost-val">10% Low Risk</div>
+              </div>
+              <div class="metric-pill">
+                <div class="metric-lbl">Authenticity</div>
+                <div class="metric-val" id="res-auth-val" style="color: var(--apple-blue);">Likely Genuine</div>
+              </div>
+              <div class="metric-pill">
+                <div class="metric-lbl">ATS System</div>
+                <div class="metric-val" id="res-ats-val">Greenhouse</div>
               </div>
             </div>
           </div>
 
-          <!-- 2. Who Posted That Job (Publisher & Company Info) -->
+          <!-- STEP 1: Job Information -->
           <div class="section-box">
-            <div class="section-title">👤 Who Posted That Job</div>
-            <div style="font-weight: 600; font-size: 12px; color: #ffffff;" id="res-poster-name">
-              Talent Acquisition Team
-            </div>
-            <div style="font-size: 10px; color: var(--apple-subtext); margin-top: 2px;" id="res-company-info">
-              Company Footprint: Verified Employer Listing
+            <div class="section-title">📌 Step 1 — Job Information</div>
+            <div style="font-size: 11px; color: var(--apple-text); line-height: 1.4;" id="res-job-info-text">
+              Title: Senior Software Engineer • Company: Apple • Location: Remote / Cupertino
             </div>
           </div>
 
-          <!-- 3. Global Search & Market Summary -->
+          <!-- STEP 2: Recruiter Research -->
           <div class="section-box">
-            <div class="section-title">🌐 Global Search Summary</div>
-            <div class="section-content" id="res-summary-text">
-              Comprehensive role overview synthesized from global web indices and hiring platform listings.
-            </div>
-            <div style="margin-top: 8px;" id="res-skill-tags">
-              <!-- Skill badges -->
+            <div class="section-title">👤 Step 2 — Recruiter Intelligence</div>
+            <div style="font-size: 11px; color: var(--apple-text);" id="res-recruiter-text">
+              Verified Employee: YES • LinkedIn Found: YES • Trust Score: 95/100
             </div>
           </div>
 
-          <!-- 4. Referenced Intelligence Resources -->
+          <!-- STEP 3 & 11: Company Research & Tech Stack -->
           <div class="section-box">
-            <div class="section-title">🔗 Referenced Resources & Sources</div>
-            <div class="resource-list" id="res-resource-list">
-              <!-- Dynamic Resource Links -->
+            <div class="section-title">🏢 Step 3 & 11 — Company & Tech Stack</div>
+            <div style="font-size: 10.5px; color: var(--apple-text); line-height: 1.35;" id="res-company-text">
+              Industry: Consumer Tech • Size: 10,000+ • HQ: Cupertino, CA
             </div>
+            <div style="margin-top: 6px;" id="res-tech-tags"></div>
+          </div>
+
+          <!-- STEP 4 & 5: News & Reputation -->
+          <div class="section-box">
+            <div class="section-title">📰 Step 4 & 5 — News & Reputation</div>
+            <div style="font-size: 10.5px; color: var(--apple-text); line-height: 1.35;" id="res-news-text">
+              Latest 90-Day News: Product expansion & steady growth. Sentiment: Positive.
+            </div>
+          </div>
+
+          <!-- STEP 6 & 7: Authenticity & Ghost Job Detection -->
+          <div class="section-box">
+            <div class="section-title">🛡️ Step 6 & 7 — Verification & Risk</div>
+            <div style="font-size: 10.5px; color: var(--apple-text);" id="res-risk-text">
+              Scam Risk: Low • Ghost Job Probability: 10% (Active recruitment pipeline).
+            </div>
+          </div>
+
+          <!-- STEP 8, 9 & 10: Skills, Salary & Hiring Process -->
+          <div class="section-box">
+            <div class="section-title">💡 Step 8, 9 & 10 — Skills & Salary</div>
+            <div style="font-size: 10.5px; color: var(--apple-text);" id="res-skills-salary-text">
+              Must-Have: React, TypeScript, Node.js • Salary: $140k - $185k (Market Rate).
+            </div>
+          </div>
+
+          <!-- STEP 12: Resume Match Details -->
+          <div class="section-box">
+            <div class="section-title">📄 Step 12 — Resume Match Analysis</div>
+            <div style="font-size: 10.5px; color: var(--apple-text);" id="res-resume-match-text">
+              Match Score: 88% • Strong Skills: React, APIs • Missing ATS Keywords: Docker, CI/CD.
+            </div>
+          </div>
+
+          <!-- Referenced Resources -->
+          <div class="section-box">
+            <div class="section-title">🔗 Referenced Intelligence Resources</div>
+            <div id="res-resource-list"></div>
           </div>
 
           <!-- Actions -->
-          <div style="display: flex; gap: 8px; margin-top: 2px;">
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
             <button id="res-cart-btn" class="btn btn-secondary" style="flex: 1; font-size: 11px;">
               📥 Save to Cart
             </button>

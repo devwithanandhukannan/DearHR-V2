@@ -1201,7 +1201,12 @@ Return ONLY valid JSON matching this schema:
   };
 };
 
-export const analyzeJobHtmlWithAI = async (html: string, pageUrl: string, domain: string) => {
+export const analyzeJobHtmlWithAI = async (
+  html: string,
+  pageUrl: string,
+  domain: string,
+  resumeText?: string
+) => {
   const cleanHtml = (html || '')
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '')
@@ -1209,38 +1214,174 @@ export const analyzeJobHtmlWithAI = async (html: string, pageUrl: string, domain
     .replace(/\s+/g, ' ')
     .substring(0, 30000);
 
-  const prompt = `You are an expert HR Intelligence AI and Web Research Engine.
-Analyze the following complete HTML web page source code loaded from "${pageUrl}" (Domain: ${domain}).
+  const resumeContext = resumeText && resumeText.trim().length > 50
+    ? `User Resume Content Context for Step 12 Resume Matching:\n"""\n${resumeText.substring(0, 4000)}\n"""`
+    : `User Resume Context: Not provided directly, perform generic candidate fit matching based on typical candidate profiles.`;
 
-Perform a thorough extraction and global company intelligence research based on the entire webpage markup, meta elements, JSON-LD, microdata, and content body.
+  const prompt = `You are an AI Job Intelligence Agent integrated into a browser extension. Your job is to analyze every job posting using real-time webpage HTML analysis, meta data, and web intelligence.
+
+Webpage Source URL: "${pageUrl}"
+Domain: "${domain}"
 
 HTML Source Excerpt:
 """
 ${cleanHtml}
 """
 
-Rules:
-1. Extract the exact Company Name, Job Title, and Who Posted That Job (Recruiter Name/Title or Hiring Team).
-2. Evaluate if this job is worth pursuing and calculate a Match & Worth Score (0-100). Provide a clear title (e.g. "Prime Opportunity") and brief explanation why.
-3. Provide deep Company Info & Research: industry category, verified domain status, company background summary, and employer reputation.
-4. Synthesize a concise Global Search Summary of the job requirements, market positioning, and key technical skills required.
-5. Generate a list of Referenced Intelligence Resources & Citations with links (e.g., Official Job Page, Glassdoor Salary Search link, LinkedIn Company Search link, Skill Benchmark link).
+${resumeContext}
 
-Return ONLY valid JSON matching this schema:
+Follow these 15 steps strictly:
+
+Step 1 - Extract Job Information (Title, Company, Recruiter, Location, Employment Type, Salary, Experience Required, Skills, Responsibilities, Qualifications, Benefits, Application URL, Date Posted, ATS Platform e.g. Greenhouse, Lever, Workday, Ashby).
+Step 2 - Research the Recruiter (Verified Employee YES/NO, LinkedIn Found YES/NO, Role, Company Tenure, Hiring Activity, Overall Trust Score 0-100).
+Step 3 - Research the Company (Website, LinkedIn, Crunchbase, Glassdoor, Size, HQ, Funding history, Founded year, Employee count, Revenue estimate, Products, Tech used, Hiring trend, Summary, Industry, Growth stage, Market reputation).
+Step 4 - Fetch Latest News (90-day real-time context: Funding, Layoffs, Acquisitions, Security, Breaches, Lawsuits, Launches, Expansion, CEO interviews, Impact).
+Step 5 - Company Reputation Analysis (Glassdoor, Reddit, Blind, HackerNews, Positive factors, Negative factors, Overall sentiment: Positive/Mixed/Negative).
+Step 6 - Verify Job Authenticity (Status: "Likely Genuine" / "Possibly Fake" / "High Scam Risk", Confidence %, Explanation).
+Step 7 - Ghost Job Detection (Signals: reposted, open months, freeze, layoff signals; Ghost Job Probability 0-100%, Explanation).
+Step 8 - ATS & Hiring Process Intelligence (ATS platform used, hiring stages, interview timeline, technical/HR rounds).
+Step 9 - Skill Intelligence (Must-Have, Nice-to-Have, Hidden skills, course/prep recommendations).
+Step 10 - Salary Intelligence (Market salary, Average, Top tier, Negotiation room, Trends).
+Step 11 - Technology Stack (Backend, Frontend, Cloud, DevOps, Databases, AI, Confidence level).
+Step 12 - Resume Match (Match Score 0-100, Missing skills, Strong skills, Weak areas, Missing ATS keywords, Improvement suggestions).
+Step 13 - Risk Analysis (Risk Level: Low/Medium/High, Risk Factors: Layoffs, Attrition, Instability).
+Step 14 - Executive Summary (Overview, Recruiter, News, Reputation, Authenticity, Ghost Job, Salary, Hiring Difficulty, Resume Match, Overall Recommendation).
+Step 15 - Final Verdict (Rating: "★★★★★ Excellent Opportunity" | "★★★★☆ Good Opportunity" | "★★★☆☆ Apply with Caution" | "★★☆☆☆ High Risk" | "★☆☆☆☆ Avoid", Top Reasons to Apply, Top Concerns, Interview Success Probability %, Next Steps).
+
+Return ONLY a single valid JSON object matching this exact schema:
 {
   "company": "Company Name",
   "jobTitle": "Job Title",
-  "postedBy": "Recruiter Name / Hiring Team info",
-  "companyResearch": "Detailed background about the company, HQ, scale, and verified status",
-  "matchScore": 90,
-  "worthTitle": "Prime Opportunity",
-  "worthDesc": "Reasoning on why it is worth pursuing",
-  "globalSummary": "Synthesized executive summary from global search & web index for this role",
-  "detectedSkills": ["Skill1", "Skill2", "Skill3", "Skill4"],
+  "jobInfo": {
+    "jobTitle": "...",
+    "companyName": "...",
+    "recruiterName": "...",
+    "jobLocation": "...",
+    "employmentType": "...",
+    "salary": "...",
+    "experienceRequired": "...",
+    "skillsRequired": ["..."],
+    "responsibilities": ["..."],
+    "qualifications": ["..."],
+    "benefits": ["..."],
+    "applicationUrl": "${pageUrl}",
+    "datePosted": "...",
+    "atsPlatform": "..."
+  },
+  "recruiterIntel": {
+    "verifiedEmployee": "YES",
+    "linkedInFound": "YES",
+    "role": "...",
+    "companyTenure": "...",
+    "hiringActivity": "...",
+    "overallTrustScore": 95,
+    "notes": "..."
+  },
+  "companyIntel": {
+    "officialWebsite": "...",
+    "linkedInPage": "...",
+    "crunchbase": "...",
+    "glassdoor": "...",
+    "companySize": "...",
+    "headquarters": "...",
+    "fundingHistory": "...",
+    "foundedYear": "...",
+    "employeeCount": "...",
+    "revenueEstimate": "...",
+    "products": "...",
+    "technologiesUsed": ["..."],
+    "hiringTrend": "...",
+    "summary": "...",
+    "industry": "...",
+    "growthStage": "...",
+    "marketReputation": "..."
+  },
+  "latestNews": [
+    {
+      "date": "...",
+      "headline": "...",
+      "summary": "...",
+      "impactOnEmployees": "...",
+      "sentiment": "Positive"
+    }
+  ],
+  "reputationAnalysis": {
+    "positiveFactors": ["..."],
+    "negativeFactors": ["..."],
+    "overallSentiment": "Positive"
+  },
+  "jobAuthenticity": {
+    "status": "Likely Genuine",
+    "confidencePct": 96,
+    "explanation": "..."
+  },
+  "ghostJobDetection": {
+    "probabilityPct": 10,
+    "explanation": "..."
+  },
+  "hiringProcessIntel": {
+    "atsUsed": "...",
+    "hiringStages": ["..."],
+    "interviewProcess": "...",
+    "typicalTimeline": "..."
+  },
+  "skillIntel": {
+    "mustHaveSkills": ["..."],
+    "niceToHaveSkills": ["..."],
+    "hiddenSkills": ["..."],
+    "recommendations": ["..."]
+  },
+  "salaryIntel": {
+    "marketSalary": "...",
+    "averageSalary": "...",
+    "topSalary": "...",
+    "negotiationRoom": "...",
+    "trends": "..."
+  },
+  "techStack": {
+    "backend": ["..."],
+    "frontend": ["..."],
+    "cloud": ["..."],
+    "devOps": ["..."],
+    "databases": ["..."],
+    "ai": ["..."],
+    "confidence": "High"
+  },
+  "resumeMatch": {
+    "matchScore": 88,
+    "missingSkills": ["..."],
+    "strongSkills": ["..."],
+    "weakAreas": ["..."],
+    "atsKeywordsMissing": ["..."],
+    "improvementSuggestions": ["..."]
+  },
+  "riskAnalysis": {
+    "riskLevel": "Low",
+    "riskFactors": ["..."]
+  },
+  "executiveSummary": {
+    "companyOverview": "...",
+    "recruiterSummary": "...",
+    "latestNews": "...",
+    "reputation": "...",
+    "jobAuthenticity": "...",
+    "ghostJobProbability": "...",
+    "salaryEstimate": "...",
+    "hiringDifficulty": "...",
+    "resumeMatch": "...",
+    "overallRecommendation": "..."
+  },
+  "finalVerdict": {
+    "rating": "★★★★☆ Good Opportunity",
+    "topReasonsToApply": ["..."],
+    "topConcerns": ["..."],
+    "interviewSuccessProbability": "75%",
+    "nextSteps": ["..."]
+  },
   "referencedResources": [
     { "name": "Official Job Listing", "badge": "Platform", "url": "${pageUrl}" },
-    { "name": "Company Glassdoor & Salary Search", "badge": "Market Index", "url": "https://www.google.com/search?q=${encodeURIComponent(domain + ' Glassdoor salary reviews')}" },
-    { "name": "LinkedIn Corporate Profile", "badge": "Corporate Profile", "url": "https://www.google.com/search?q=${encodeURIComponent(domain + ' LinkedIn corporate profile')}" }
+    { "name": "Glassdoor Reviews & Compensation", "badge": "Market Index", "url": "https://www.google.com/search?q=${encodeURIComponent(domain + ' Glassdoor reviews')}" },
+    { "name": "LinkedIn Corporate Profile", "badge": "LinkedIn", "url": "https://www.google.com/search?q=${encodeURIComponent(domain + ' LinkedIn profile')}" }
   ]
 }`;
 

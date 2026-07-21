@@ -307,16 +307,40 @@ export const updateCoverLetter = async (req: Request, res: Response) => {
 
 export const analyzeJobHtml = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.userId;
     const { html, url, domain } = req.body;
     if (!html) {
       return res.status(400).json({ success: false, error: 'Page HTML content is required' });
     }
 
-    const researchData = await analyzeJobHtmlWithAI(html as string, (url as string) || '', (domain as string) || '');
+    let primaryResumeText = '';
+    if (userId) {
+      const profile = await prisma.jobSeekerProfile.findUnique({ where: { userId } });
+      if (profile) {
+        const resume = await prisma.resume.findFirst({
+          where: { jobSeekerId: profile.id, isPrimary: true }
+        }) || await prisma.resume.findFirst({
+          where: { jobSeekerId: profile.id },
+          orderBy: { updatedAt: 'desc' }
+        });
+        if (resume?.content) {
+          const c: any = resume.content;
+          primaryResumeText = c.htmlContent || c.summary || JSON.stringify(c);
+        }
+      }
+    }
+
+    const researchData = await analyzeJobHtmlWithAI(
+      html as string,
+      (url as string) || '',
+      (domain as string) || '',
+      primaryResumeText
+    );
     return res.status(200).json({ success: true, data: researchData });
   } catch (err: any) {
     console.error('analyzeJobHtml controller error:', err);
     return res.status(500).json({ success: false, error: err.message || 'AI webpage analysis failed' });
   }
 };
+
 
